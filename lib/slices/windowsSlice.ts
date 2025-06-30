@@ -1,5 +1,9 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
+// Window size constraints
+const MIN_WINDOW_WIDTH = 550;
+const MIN_WINDOW_HEIGHT = 150;
+
 export interface WindowState {
   id: string;
   title: string;
@@ -29,6 +33,7 @@ export interface WindowState {
   };
   isMinimizeAnimating?: boolean;
   isRestoreAnimating?: boolean;
+  refreshCounter?: number; // Added refresh counter
 }
 
 interface WindowsState {
@@ -187,8 +192,8 @@ const windowsSlice = createSlice({
     ) => {
       const window = state.windows.find((w) => w.id === action.payload.id);
       if (window && window.isResizable && !window.isMaximized) {
-        window.width = Math.max(200, action.payload.width);
-        window.height = Math.max(100, action.payload.height);
+        window.width = Math.max(MIN_WINDOW_WIDTH, action.payload.width);
+        window.height = Math.max(MIN_WINDOW_HEIGHT, action.payload.height);
       }
     },
     setTaskbarAnimationTarget: (
@@ -221,6 +226,84 @@ const windowsSlice = createSlice({
         window.isRestoreAnimating = action.payload.isAnimating;
       }
     },
+    updateWindowTitleAndContent: (
+      state,
+      action: PayloadAction<{ id: string; title: string; content: string }>
+    ) => {
+      const window = state.windows.find((w) => w.id === action.payload.id);
+      if (window) {
+        window.title = action.payload.title;
+        window.content = action.payload.content;
+      }
+    },
+    unfocusAllWindows: (state) => {
+      // Deactivate all windows
+      state.windows.forEach((w) => {
+        w.isActive = false;
+      });
+      state.activeWindowId = null;
+    },
+    refreshExplorerWindows: (state) => {
+      // Increment a refresh counter for all Explorer windows to trigger re-renders
+      // This will be used by Explorer components to detect when they need to refresh
+      state.windows.forEach((window) => {
+        if (
+          window.content.includes('Folder:') ||
+          window.content.includes('My Computer') ||
+          window.content.includes('Recycle Bin')
+        ) {
+          // Add or increment refresh counter
+          window.refreshCounter = (window.refreshCounter || 0) + 1;
+        }
+      });
+    },
+    openOrFocusWindow: (
+      state,
+      action: PayloadAction<Omit<WindowState, 'id' | 'zIndex' | 'isActive'>>
+    ) => {
+      // Check if a window with the same content already exists
+      const existingWindow = state.windows.find(
+        (window) => window.content === action.payload.content
+      );
+
+      if (existingWindow) {
+        // Focus the existing window instead of opening a new one
+        // Deactivate all windows
+        state.windows.forEach((w) => {
+          w.isActive = false;
+        });
+
+        // Activate and bring to front
+        existingWindow.isActive = true;
+        existingWindow.zIndex = state.nextZIndex;
+        state.activeWindowId = existingWindow.id;
+        state.nextZIndex += 1;
+
+        // Restore if minimized
+        if (existingWindow.isMinimized) {
+          existingWindow.isMinimized = false;
+          existingWindow.isRestoreAnimating = true;
+        }
+      } else {
+        // No existing window found, create a new one
+        const id = Date.now().toString();
+        const newWindow: WindowState = {
+          ...action.payload,
+          id,
+          zIndex: state.nextZIndex,
+          isActive: true,
+        };
+
+        // Deactivate all other windows
+        state.windows.forEach((window) => {
+          window.isActive = false;
+        });
+
+        state.windows.push(newWindow);
+        state.activeWindowId = id;
+        state.nextZIndex += 1;
+      }
+    },
   },
 });
 
@@ -237,5 +320,9 @@ export const {
   setTaskbarAnimationTarget,
   setMinimizeAnimating,
   setRestoreAnimating,
+  updateWindowTitleAndContent,
+  unfocusAllWindows,
+  refreshExplorerWindows,
+  openOrFocusWindow,
 } = windowsSlice.actions;
 export default windowsSlice.reducer;

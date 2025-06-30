@@ -1,5 +1,10 @@
 // Centralized icon mapping to ensure consistency across desktop icons, windows, and taskbar
 export const getIconPath = (iconId: string): string => {
+  // If the iconId is already a PNG filename, return it as-is
+  if (iconId.toLowerCase().endsWith('.png')) {
+    return iconId;
+  }
+
   const iconMap: { [key: string]: string } = {
     // System items
     computer: 'My Computer.png',
@@ -91,4 +96,55 @@ export const getIconPath = (iconId: string): string => {
 
   // Default fallback
   return 'Default.png';
+};
+
+// Get icon for folder based on current path
+export const getFolderIcon = (path: string): string => {
+  if (!path) return 'Folder Closed.png';
+
+  const normalizedPath = path.toLowerCase().trim();
+
+  // Special system paths
+  if (normalizedPath === 'my computer' || normalizedPath === '') {
+    return 'My Computer.png';
+  }
+
+  if (normalizedPath === 'recycle bin' || normalizedPath.includes('recycle')) {
+    return 'Recycle Bin (empty).png';
+  }
+
+  if (normalizedPath === 'control panel') {
+    return 'Control Panel.png';
+  }
+
+  // Check for specific folder types based on path
+  if (normalizedPath.includes('desktop')) {
+    return 'Desktop.png';
+  }
+
+  if (
+    normalizedPath.includes('my documents') ||
+    normalizedPath.includes('documents')
+  ) {
+    return 'My Documents.png';
+  }
+
+  if (
+    normalizedPath.includes('my pictures') ||
+    normalizedPath.includes('pictures')
+  ) {
+    return 'My Pictures.png';
+  }
+
+  if (normalizedPath.includes('my music') || normalizedPath.includes('music')) {
+    return 'My Music.png';
+  }
+
+  // For C:\ drive or any drive letter
+  if (/^[a-z]:\\?$/i.test(normalizedPath)) {
+    return 'My Computer.png';
+  }
+
+  // Default folder icon
+  return 'Folder Closed.png';
 };

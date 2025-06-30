@@ -13,7 +13,7 @@ export interface DesktopIcon {
 
 interface DesktopState {
   icons: DesktopIcon[];
-  selectedIconId: string | null;
+  selectedIconIds: string[]; // Changed from selectedIconId to support multiple selection
   wallpaper: string;
 }
 
@@ -80,7 +80,7 @@ function getDefaultIcon(type: string): string {
 
 const initialState: DesktopState = {
   icons: createDesktopIconsFromFileSystem(),
-  selectedIconId: null,
+  selectedIconIds: [], // Changed from selectedIconId: null
   wallpaper: 'bliss',
 };
 
@@ -89,7 +89,39 @@ const desktopSlice = createSlice({
   initialState,
   reducers: {
     selectIcon: (state, action: PayloadAction<string | null>) => {
-      state.selectedIconId = action.payload;
+      // Single select - clear all and select one or clear all
+      state.selectedIconIds = action.payload ? [action.payload] : [];
+    },
+    selectMultipleIcons: (state, action: PayloadAction<string[]>) => {
+      // Set multiple selected icons
+      state.selectedIconIds = action.payload;
+    },
+    addToSelection: (state, action: PayloadAction<string>) => {
+      // Add icon to selection if not already selected
+      if (!state.selectedIconIds.includes(action.payload)) {
+        state.selectedIconIds.push(action.payload);
+      }
+    },
+    removeFromSelection: (state, action: PayloadAction<string>) => {
+      // Remove icon from selection
+      state.selectedIconIds = state.selectedIconIds.filter(
+        (id) => id !== action.payload
+      );
+    },
+    toggleIconSelection: (state, action: PayloadAction<string>) => {
+      // Toggle icon selection (for Ctrl+click)
+      const iconId = action.payload;
+      if (state.selectedIconIds.includes(iconId)) {
+        state.selectedIconIds = state.selectedIconIds.filter(
+          (id) => id !== iconId
+        );
+      } else {
+        state.selectedIconIds.push(iconId);
+      }
+    },
+    clearSelection: (state) => {
+      // Clear all selected icons
+      state.selectedIconIds = [];
     },
     moveIcon: (
       state,
@@ -116,6 +148,13 @@ const desktopSlice = createSlice({
         state.icons.map((icon) => [icon.id, { x: icon.x, y: icon.y }])
       );
 
+      // Check for pending drop position
+      const pendingDropStr =
+        typeof window !== 'undefined'
+          ? sessionStorage.getItem('pendingDropPosition')
+          : null;
+      const pendingDrop = pendingDropStr ? JSON.parse(pendingDropStr) : null;
+
       const newIcons = createDesktopIconsFromFileSystem();
 
       // Restore positions for existing icons
@@ -124,24 +163,36 @@ const desktopSlice = createSlice({
         if (existingPos) {
           icon.x = existingPos.x;
           icon.y = existingPos.y;
+        } else if (pendingDrop && icon.name === pendingDrop.name) {
+          // Position new icon at drop coordinates
+          icon.x = pendingDrop.x;
+          icon.y = pendingDrop.y;
+
+          // Clear the pending drop position
+          if (typeof window !== 'undefined') {
+            sessionStorage.removeItem('pendingDropPosition');
+          }
         }
       });
 
       state.icons = newIcons;
 
-      // Clear selection if selected icon no longer exists
-      if (
-        state.selectedIconId &&
-        !newIcons.find((icon) => icon.id === state.selectedIconId)
-      ) {
-        state.selectedIconId = null;
-      }
+      // Clear selection if selected icons no longer exist
+      const existingIconIds = new Set(newIcons.map((icon) => icon.id));
+      state.selectedIconIds = state.selectedIconIds.filter((id) =>
+        existingIconIds.has(id)
+      );
     },
   },
 });
 
 export const {
   selectIcon,
+  selectMultipleIcons,
+  addToSelection,
+  removeFromSelection,
+  toggleIconSelection,
+  clearSelection,
   moveIcon,
   addIcon,
   removeIcon,

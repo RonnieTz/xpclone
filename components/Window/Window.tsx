@@ -26,7 +26,7 @@ const Window: React.FC<WindowProps> = ({ window }) => {
 
   const { isDragging, handleMouseDown: handleDragMouseDown } =
     useWindowDrag(window);
-  const { handleResizeMouseDown } = useWindowResize(window);
+  const { isResizing, handleResizeMouseDown } = useWindowResize(window);
 
   // Handle animation state reset
   useEffect(() => {
@@ -139,6 +139,15 @@ const Window: React.FC<WindowProps> = ({ window }) => {
     }
   }, [isDragging]);
 
+  // Add effect to clean up any lingering inline styles when resizing starts
+  useEffect(() => {
+    if (isResizing && windowRef.current) {
+      const element = windowRef.current;
+      // Remove transition property that could interfere with resizing
+      element.style.removeProperty('transition');
+    }
+  }, [isResizing]);
+
   const handleWindowClick = () => {
     dispatch(focusWindow(window.id));
   };
@@ -209,6 +218,7 @@ const Window: React.FC<WindowProps> = ({ window }) => {
   // Determine if we should show transition
   const shouldAnimate =
     !isDragging &&
+    !isResizing &&
     (window.isAnimating ||
       window.isMinimizeAnimating ||
       window.isRestoreAnimating);
@@ -216,6 +226,7 @@ const Window: React.FC<WindowProps> = ({ window }) => {
   return (
     <div
       ref={windowRef}
+      data-window
       className={`absolute bg-gray-100 shadow-lg overflow-hidden ${
         window.isMaximized ? '' : 'rounded-t-lg'
       } ${isDragging ? 'cursor-grabbing' : ''} ${

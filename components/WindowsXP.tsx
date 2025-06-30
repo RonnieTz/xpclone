@@ -8,7 +8,8 @@ import {
   setStartButtonPressed,
 } from '@/lib/slices/taskbarSlice';
 import { setStartMenuOpen } from '@/lib/slices/startMenuSlice';
-import { WindowState } from '@/lib/slices/windowsSlice';
+import { unfocusAllWindows, WindowState } from '@/lib/slices/windowsSlice';
+import { clearSelection } from '@/lib/slices/desktopSlice';
 import Desktop from './Desktop/Desktop';
 import Taskbar from './Taskbar/Taskbar';
 import StartMenu from './StartMenu/StartMenu';
@@ -20,6 +21,7 @@ const WindowsXP: React.FC = () => {
   const { isOpen: startMenuOpen } = useSelector(
     (state: RootState) => state.startMenu
   );
+  const { selectedIconIds } = useSelector((state: RootState) => state.desktop);
 
   // Sync taskbar items with windows
   useEffect(() => {
@@ -35,11 +37,33 @@ const WindowsXP: React.FC = () => {
     dispatch(syncTaskbarWithWindows(taskbarItems));
   }, [windows, dispatch]);
 
-  // Close start menu when clicking outside
+  // Handle global clicks for start menu and window focus
   const handleGlobalClick = (e: React.MouseEvent) => {
-    if (startMenuOpen && !(e.target as Element).closest('[data-start-menu]')) {
+    const target = e.target as Element;
+
+    // Close start menu when clicking outside
+    if (startMenuOpen && !target.closest('[data-start-menu]')) {
       dispatch(setStartMenuOpen(false));
       dispatch(setStartButtonPressed(false)); // Reset start button state
+    }
+
+    // Clear desktop icon selection when clicking outside of desktop icons
+    const clickedOnDesktopIcon = target.closest('[data-desktop-icon]');
+    if (!clickedOnDesktopIcon && selectedIconIds.length > 0) {
+      dispatch(clearSelection());
+    }
+
+    // Unfocus windows when clicking outside any window (but not on taskbar or start menu)
+    const clickedOnWindow = target.closest('[data-window]');
+    const clickedOnTaskbar = target.closest('[data-taskbar]');
+    const clickedOnStartMenu = target.closest('[data-start-menu]');
+
+    if (!clickedOnWindow && !clickedOnTaskbar && !clickedOnStartMenu) {
+      // Only unfocus if there are active windows and we clicked on desktop/empty space
+      const hasActiveWindow = windows.some((window) => window.isActive);
+      if (hasActiveWindow) {
+        dispatch(unfocusAllWindows());
+      }
     }
   };
 

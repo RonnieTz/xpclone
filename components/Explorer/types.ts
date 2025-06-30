@@ -8,6 +8,7 @@ export interface ExplorerProps {
     | 'my-music'
     | 'control-panel'
     | 'internet-explorer';
+  windowId?: string; // Add windowId to allow Explorer to close its parent window
 }
 
 export interface DropdownPosition {
@@ -22,3 +23,10 @@ export type MenuType =
   | 'Favorites'
   | 'Tools'
   | 'Help';
+
+export type ExplorerBarState =
+  | 'Default'
+  | 'Search'
+  | 'Favorites'
+  | 'History'
+  | 'Folders';

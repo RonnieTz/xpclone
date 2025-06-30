@@ -4,6 +4,9 @@ import taskbarSlice from './slices/taskbarSlice';
 import startMenuSlice from './slices/startMenuSlice';
 import windowsSlice from './slices/windowsSlice';
 import tooltipReducer from './slices/tooltipSlice';
+import folderOptionsReducer from './slices/folderOptionsSlice';
+import navigationReducer from './slices/navigationSlice';
+import folderPositionsReducer from './slices/folderPositionsSlice';
 
 export const store = configureStore({
   reducer: {
@@ -12,6 +15,9 @@ export const store = configureStore({
     startMenu: startMenuSlice,
     windows: windowsSlice,
     tooltip: tooltipReducer,
+    folderOptions: folderOptionsReducer,
+    navigation: navigationReducer,
+    folderPositions: folderPositionsReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

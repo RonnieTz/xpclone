@@ -1,241 +1,70 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/lib/store';
-import { selectIcon, moveIcon } from '@/lib/slices/desktopSlice';
-import { openWindow } from '@/lib/slices/windowsSlice';
-import { FileSystemItem, findItemById } from '@/lib/filesystem';
+import {
+  selectIcon,
+  selectMultipleIcons,
+  toggleIconSelection,
+  clearSelection,
+  moveIcon,
+} from '@/lib/slices/desktopSlice';
 import DesktopIcon from './DesktopIcon';
+import { handleIconDoubleClick } from './desktopHandlers';
+import { useDesktopKeyboard } from './useDesktopKeyboard';
 
 const Desktop: React.FC = () => {
   const dispatch = useDispatch();
-  const { icons, selectedIconId } = useSelector(
+  const { icons, selectedIconIds } = useSelector(
     (state: RootState) => state.desktop
   );
+  const [lastSelectedIndex, setLastSelectedIndex] = useState<number>(-1);
+
+  // Use the custom hook for keyboard navigation
+  useDesktopKeyboard(selectedIconIds[0] || null, icons);
 
   const handleDesktopClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
-      dispatch(selectIcon(null));
+      dispatch(clearSelection());
+      setLastSelectedIndex(-1);
     }
   };
 
-  const handleIconDoubleClick = (iconId: string, iconName: string) => {
-    const icon = icons.find((i) => i.id === iconId);
-    const fileSystemItem = icon?.fileSystemItem;
+  const handleIconSelect = (iconId: string, event?: React.MouseEvent) => {
+    const iconIndex = icons.findIndex((icon) => icon.id === iconId);
 
-    if (!fileSystemItem) return;
+    if (event?.ctrlKey) {
+      // Ctrl+click: toggle selection of individual icon
+      dispatch(toggleIconSelection(iconId));
+      setLastSelectedIndex(iconIndex);
+    } else if (event?.shiftKey && lastSelectedIndex !== -1) {
+      // Shift+click: select range from last selected to current
+      const start = Math.min(lastSelectedIndex, iconIndex);
+      const end = Math.max(lastSelectedIndex, iconIndex);
+      const rangeIds = icons.slice(start, end + 1).map((icon) => icon.id);
 
-    // Check if this is a folder-like item that should open Explorer
-    const isFolderLike = (item: FileSystemItem, name: string): boolean => {
-      // Always show Explorer for actual folders
-      if (item.type === 'folder') return true;
-
-      // Check for folder-like shortcuts by name
-      const folderLikeNames = [
-        'My Documents',
-        'My Pictures',
-        'My Music',
-        'My Videos',
-        'My Computer',
-        'Recycle Bin',
-        'Desktop',
-        'Documents',
-        'Pictures',
-        'Music',
-        'Videos',
-      ];
-
-      if (
-        folderLikeNames.some((folderName) =>
-          name.toLowerCase().includes(folderName.toLowerCase())
-        )
-      ) {
-        return true;
-      }
-
-      // Check for shortcuts that point to folder paths
-      if (item.type === 'shortcut') {
-        const shortcut = item as { targetPath: string };
-        const folderLikePaths = [
-          'My Computer',
-          'Recycle Bin',
-          'Documents',
-          'Pictures',
-          'Music',
-        ];
-        return folderLikePaths.some((path) =>
-          shortcut.targetPath.includes(path)
-        );
-      }
-
-      return false;
-    };
-
-    // If it's a folder-like item, handle it as Explorer content
-    if (isFolderLike(fileSystemItem, iconName)) {
-      handleFolderLikeItemOpen(fileSystemItem, iconName);
-      return;
-    }
-
-    // Handle other types normally
-    switch (fileSystemItem.type) {
-      case 'shortcut':
-        // For non-folder shortcuts, resolve the target
-        const shortcut = fileSystemItem as {
-          targetId: string;
-          targetPath: string;
-        };
-        const targetItem = findItemById(shortcut.targetId);
-
-        if (targetItem) {
-          handleFileSystemItemOpen(targetItem, iconName);
-        } else {
-          // If target not found, try to handle by targetPath
-          handleSpecialShortcut(shortcut.targetPath, iconName);
-        }
-        break;
-
-      case 'file':
-        handleFileSystemItemOpen(fileSystemItem, iconName);
-        break;
-
-      case 'folder':
-        handleFileSystemItemOpen(fileSystemItem, iconName);
-        break;
-
-      case 'program':
-        handleFileSystemItemOpen(fileSystemItem, iconName);
-        break;
-
-      default:
-        handleFileSystemItemOpen(fileSystemItem, iconName);
-    }
-  };
-
-  const handleFolderLikeItemOpen = (
-    item: FileSystemItem,
-    displayName: string
-  ) => {
-    let windowContent = '';
-    let iconId: string;
-
-    // Determine the path and type for Explorer
-    if (item.type === 'folder') {
-      windowContent = `Folder: ${item.path}`;
-      iconId = item.icon || 'folder';
-    } else if (item.type === 'shortcut') {
-      const shortcut = item as { targetPath: string };
-      // Set appropriate content for Explorer detection
-      if (displayName.toLowerCase().includes('my computer')) {
-        windowContent = 'My Computer - System drives and devices';
-        iconId = 'computer';
-      } else if (displayName.toLowerCase().includes('recycle bin')) {
-        windowContent = 'Recycle Bin - Deleted items';
-        iconId = 'recycle';
+      // Combine with existing selection if Ctrl is also held
+      if (event?.ctrlKey) {
+        const newSelection = [...new Set([...selectedIconIds, ...rangeIds])];
+        dispatch(selectMultipleIcons(newSelection));
       } else {
-        windowContent = `Folder: ${shortcut.targetPath}`;
-        iconId = item.icon || 'folder';
+        dispatch(selectMultipleIcons(rangeIds));
       }
     } else {
-      // Fallback
-      windowContent = `Folder: ${displayName}`;
-      iconId = item.icon || 'folder';
+      // Regular click: select only this icon
+      dispatch(selectIcon(iconId));
+      setLastSelectedIndex(iconIndex);
     }
-
-    dispatch(
-      openWindow({
-        title: displayName,
-        content: windowContent,
-        icon: iconId,
-        x: 100 + Math.random() * 100,
-        y: 100 + Math.random() * 100,
-        width: 700,
-        height: 500,
-        isMinimized: false,
-        isMaximized: false,
-        isResizable: true,
-      })
-    );
   };
 
-  const handleFileSystemItemOpen = (
-    item: FileSystemItem,
-    displayName: string
-  ) => {
-    let windowContent = '';
-    let iconId = item.icon || 'file'; // eslint-disable-line prefer-const
+  const onIconDoubleClick = (iconId: string, iconName: string) => {
+    // Clear selection after opening
+    dispatch(clearSelection());
+    setLastSelectedIndex(-1);
 
-    switch (item.type) {
-      case 'file':
-        const fileItem = item as { content?: string; name: string };
-        windowContent = fileItem.content || `File: ${item.name}`;
-        break;
-
-      case 'folder':
-        windowContent = `Folder: ${item.path}`;
-        break;
-
-      case 'program':
-        windowContent = `Program: ${item.name}`;
-        break;
-
-      default:
-        windowContent = `Item: ${item.name}`;
-    }
-
-    dispatch(
-      openWindow({
-        title: displayName,
-        content: windowContent,
-        icon: iconId,
-        x: 100 + Math.random() * 100, // Slight random offset
-        y: 100 + Math.random() * 100,
-        width: item.type === 'folder' ? 700 : 600,
-        height: item.type === 'folder' ? 500 : 400,
-        isMinimized: false,
-        isMaximized: false,
-        isResizable: true,
-      })
-    );
-  };
-
-  const handleSpecialShortcut = (targetPath: string, displayName: string) => {
-    // Handle special system shortcuts that don't have filesystem representations
-    let windowContent = '';
-    let iconId = 'file'; // default
-
-    switch (targetPath) {
-      case 'My Computer':
-        windowContent = 'My Computer - System drives and devices';
-        iconId = 'computer';
-        break;
-
-      case 'Recycle Bin':
-        windowContent = 'Recycle Bin - Deleted items';
-        iconId = 'recycle';
-        break;
-
-      default:
-        windowContent = `System item: ${displayName}`;
-        // Use the display name to determine icon
-        iconId = displayName.toLowerCase().replace(/\s+/g, '-');
-    }
-
-    dispatch(
-      openWindow({
-        title: displayName,
-        content: windowContent,
-        icon: iconId,
-        x: 100 + Math.random() * 100,
-        y: 100 + Math.random() * 100,
-        width: 700,
-        height: 500,
-        isMinimized: false,
-        isMaximized: false,
-        isResizable: true,
-      })
-    );
+    // Handle the double click using the separated handler
+    handleIconDoubleClick(iconId, iconName, icons, dispatch);
   };
 
   return (
@@ -247,15 +76,16 @@ const Desktop: React.FC = () => {
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
+        backgroundColor: 'transparent',
       }}
     >
       {icons.map((icon) => (
         <DesktopIcon
           key={icon.id}
           icon={icon}
-          isSelected={selectedIconId === icon.id}
-          onSelect={() => dispatch(selectIcon(icon.id))}
-          onDoubleClick={() => handleIconDoubleClick(icon.id, icon.name)}
+          isSelected={selectedIconIds.includes(icon.id)}
+          onSelect={(event) => handleIconSelect(icon.id, event)}
+          onDoubleClick={() => onIconDoubleClick(icon.id, icon.name)}
           onMove={(x, y) => dispatch(moveIcon({ id: icon.id, x, y }))}
         />
       ))}

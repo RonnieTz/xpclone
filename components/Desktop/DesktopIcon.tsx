@@ -1,14 +1,16 @@
 'use client';
 
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useRef } from 'react';
+import { useDispatch } from 'react-redux';
 import Image from 'next/image';
 import { DesktopIcon as DesktopIconType } from '@/lib/slices/desktopSlice';
+import { unfocusAllWindows } from '@/lib/slices/windowsSlice';
 import { getIconPath } from '@/lib/iconMapping';
 
 interface DesktopIconProps {
   icon: DesktopIconType;
   isSelected: boolean;
-  onSelect: () => void;
+  onSelect: (event?: React.MouseEvent) => void;
   onDoubleClick: () => void;
   onMove: (x: number, y: number) => void;
 }
@@ -20,54 +22,57 @@ const DesktopIcon: React.FC<DesktopIconProps> = ({
   onDoubleClick,
   onMove,
 }) => {
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const dispatch = useDispatch();
   const iconRef = useRef<HTMLDivElement>(null);
 
   const handleMouseDown = (e: React.MouseEvent) => {
+    if (e.button !== 0) return; // Only handle left mouse button
+
     e.preventDefault();
-    onSelect();
+    e.stopPropagation();
 
-    const rect = iconRef.current?.getBoundingClientRect();
-    if (rect) {
-      setDragOffset({
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
-      });
-      setIsDragging(true);
-    }
-  };
+    // Select the icon with event info for multiselect
+    onSelect(e);
 
-  const handleMouseMove = useCallback(
-    (e: MouseEvent) => {
-      if (isDragging) {
-        const newX = e.clientX - dragOffset.x;
-        const newY = e.clientY - dragOffset.y;
-        onMove(Math.max(0, newX), Math.max(0, newY));
+    let isDragging = false;
+    const startX = e.clientX;
+    const startY = e.clientY;
+    const threshold = 5; // Minimum pixels to move before starting drag
+
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const deltaX = Math.abs(moveEvent.clientX - startX);
+      const deltaY = Math.abs(moveEvent.clientY - startY);
+
+      if (!isDragging && (deltaX > threshold || deltaY > threshold)) {
+        // Start drag operation and unfocus all windows
+        isDragging = true;
+        dispatch(unfocusAllWindows());
       }
-    },
-    [isDragging, dragOffset.x, dragOffset.y, onMove]
-  );
 
-  const handleMouseUp = useCallback(() => {
-    setIsDragging(false);
-  }, []);
+      if (isDragging) {
+        // Update icon position during drag
+        const rect = iconRef.current?.offsetParent?.getBoundingClientRect();
+        if (rect) {
+          const newX = Math.max(0, moveEvent.clientX - rect.left - 40);
+          const newY = Math.max(0, moveEvent.clientY - rect.top - 40);
+          onMove(newX, newY);
+        }
+      }
+    };
 
-  React.useEffect(() => {
-    if (isDragging) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove);
-        document.removeEventListener('mouseup', handleMouseUp);
-      };
-    }
-  }, [isDragging, handleMouseMove, handleMouseUp]);
+    const handleMouseUp = (upEvent: MouseEvent) => {
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('mouseup', handleMouseUp);
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('mouseup', handleMouseUp);
+  };
 
   return (
     <div
       ref={iconRef}
-      className="absolute flex flex-col items-center cursor-pointer p-1 rounded"
+      className="absolute flex flex-col items-center p-1 rounded"
       style={{
         left: icon.x,
         top: icon.y,
@@ -76,6 +81,7 @@ const DesktopIcon: React.FC<DesktopIconProps> = ({
       }}
       onMouseDown={handleMouseDown}
       onDoubleClick={onDoubleClick}
+      data-desktop-icon
     >
       {/* Icon Image */}
       <div className="mb-1 select-none">

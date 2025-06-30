@@ -8,6 +8,7 @@ import SystemTray from './SystemTray';
 const Taskbar: React.FC = () => {
   return (
     <div
+      data-taskbar
       className="fixed bottom-0 left-0 right-0 h-10 flex items-center z-50"
       style={{
         backgroundImage: 'url(/taskbar-background.jpg)',

@@ -45,7 +45,11 @@ const WindowContent: React.FC<WindowContentProps> = ({ window }) => {
         }`}
         style={{ height: 'calc(100% - 30px)' }}
       >
-        <Explorer path={getExplorerPath()} type={getExplorerType()} />
+        <Explorer
+          path={getExplorerPath()}
+          type={getExplorerType()}
+          windowId={window.id}
+        />
       </div>
     );
   }

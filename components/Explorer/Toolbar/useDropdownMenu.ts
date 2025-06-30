@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { DropdownPosition } from './types';
+import { DropdownPosition } from '../types';
 
 export const useDropdownMenu = () => {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);

@@ -21,18 +21,14 @@ const ToolbarDropdown: React.FC<ToolbarDropdownProps> = ({
       style={{
         left: position.x,
         top: position.y,
-        maxHeight: '300px',
-        overflow: 'auto',
+        overflow: 'visible',
         border: '1px solid #aca899',
         boxShadow: '3px 3px 3px rgba(0, 0, 0, 0.5)',
+        padding: 0,
       }}
       onClick={(e) => e.stopPropagation()} // Prevent clicks inside dropdown from closing it
     >
-      {children || (
-        <div className="p-4 text-gray-500 text-sm">
-          Dropdown content will go here
-        </div>
-      )}
+      {children}
     </div>
   );
 };
