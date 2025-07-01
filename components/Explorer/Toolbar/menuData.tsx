@@ -28,23 +28,22 @@ export const getDropdownItems = (
   windowId?: string,
   onClose?: () => void,
   explorerBarState?: ExplorerBarState,
-  onExplorerBarStateChange?: (state: ExplorerBarState) => void
-): React.ReactNode => {
+  onExplorerBarStateChange?: (state: ExplorerBarState) => void,
+  onSelectAll?: () => void
+) => {
   const config = menuConfig[menuType];
+  if (!config) return null;
 
-  if (!config) {
-    return null;
-  }
-
-  const { width, component: Component } = config;
+  const MenuComponent = config.component;
 
   return (
-    <MenuContainer width={width}>
-      <Component
+    <MenuContainer width={config.width}>
+      <MenuComponent
         windowId={windowId}
         onClose={onClose}
         explorerBarState={explorerBarState}
         onExplorerBarStateChange={onExplorerBarStateChange}
+        onSelectAll={onSelectAll}
       />
     </MenuContainer>
   );

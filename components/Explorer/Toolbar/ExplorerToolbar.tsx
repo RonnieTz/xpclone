@@ -8,14 +8,16 @@ import { MenuType, ExplorerBarState } from '../types';
 
 interface ExplorerToolbarProps {
   windowId?: string;
-  explorerBarState: ExplorerBarState;
-  onExplorerBarStateChange: (state: ExplorerBarState) => void;
+  explorerBarState?: ExplorerBarState;
+  onExplorerBarStateChange?: (state: ExplorerBarState) => void;
+  onSelectAll?: () => void; // Add onSelectAll prop
 }
 
 const ExplorerToolbar: React.FC<ExplorerToolbarProps> = ({
   windowId,
   explorerBarState,
   onExplorerBarStateChange,
+  onSelectAll,
 }) => {
   const {
     activeDropdown,
@@ -79,7 +81,8 @@ const ExplorerToolbar: React.FC<ExplorerToolbarProps> = ({
             windowId,
             () => setActiveDropdown(null),
             explorerBarState,
-            onExplorerBarStateChange
+            onExplorerBarStateChange,
+            onSelectAll // Pass onSelectAll to dropdown items
           )}
       </ToolbarDropdown>
     </div>

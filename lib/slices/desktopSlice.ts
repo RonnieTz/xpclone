@@ -108,6 +108,17 @@ const desktopSlice = createSlice({
         (id) => id !== action.payload
       );
     },
+    setFocusIcon: (state, action: PayloadAction<string>) => {
+      // Set focus without clearing selection - just ensure the icon is selected
+      if (!state.selectedIconIds.includes(action.payload)) {
+        state.selectedIconIds.push(action.payload);
+      }
+      // Move the focused icon to the end of the array to make it the "primary" selection
+      const filteredIds = state.selectedIconIds.filter(
+        (id) => id !== action.payload
+      );
+      state.selectedIconIds = [...filteredIds, action.payload];
+    },
     toggleIconSelection: (state, action: PayloadAction<string>) => {
       // Toggle icon selection (for Ctrl+click)
       const iconId = action.payload;
@@ -191,6 +202,7 @@ export const {
   selectMultipleIcons,
   addToSelection,
   removeFromSelection,
+  setFocusIcon,
   toggleIconSelection,
   clearSelection,
   moveIcon,
