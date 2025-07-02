@@ -2,14 +2,15 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { FolderContentProps, FileItem } from './types';
-import FileItemComponent from './FileItem';
+import UnifiedItem from '@/components/Common/UnifiedItem';
+import { convertFileItemToUnified } from '@/components/Common/UnifiedItem/utils';
 
 const FolderContent: React.FC<FolderContentProps> = ({
   files = [],
   viewMode = 'icons',
   onFileDoubleClick,
   onFileSelect,
-  onBackgroundClick, // Add the new prop
+  onBackgroundClick,
   selectedFileIds = [],
   windowId,
   onFileMove,
@@ -131,16 +132,16 @@ const FolderContent: React.FC<FolderContentProps> = ({
           onClick={handleBackgroundClick}
         >
           {files.map((file: FileItem) => (
-            <FileItemComponent
+            <UnifiedItem
               key={file.id}
-              file={file}
+              item={convertFileItemToUnified(file)}
+              context="folder"
               viewMode={viewMode}
-              onDoubleClick={() => onFileDoubleClick?.(file)}
+              isSelected={selectedFileIds.includes(file.id)}
               onSelect={(event?: React.MouseEvent) =>
                 onFileSelect?.(file, event)
               }
-              isSelected={selectedFileIds.includes(file.id)}
-              windowId={windowId}
+              onDoubleClick={() => onFileDoubleClick?.(file)}
               onMove={
                 viewMode === 'icons'
                   ? (x: number, y: number) => handleFileMove(file.id, x, y)

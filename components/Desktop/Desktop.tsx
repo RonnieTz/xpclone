@@ -1,8 +1,9 @@
 'use client';
 
 import React from 'react';
-import DesktopIcon from './DesktopIcon';
 import DesktopBackground from './DesktopBackground';
+import UnifiedItem from '@/components/Common/UnifiedItem';
+import { convertDesktopIconToUnified } from '@/components/Common/UnifiedItem/utils';
 import { useDesktop } from './useDesktop';
 
 const Desktop: React.FC = () => {
@@ -18,9 +19,10 @@ const Desktop: React.FC = () => {
   return (
     <DesktopBackground onDesktopClick={handleDesktopClick}>
       {icons.map((icon) => (
-        <DesktopIcon
+        <UnifiedItem
           key={icon.id}
-          icon={icon}
+          item={convertDesktopIconToUnified(icon)}
+          context="desktop"
           isSelected={selectedIconIds.includes(icon.id)}
           onSelect={(event) => handleIconSelect(icon.id, event)}
           onDoubleClick={() => onIconDoubleClick(icon.id, icon.name)}
