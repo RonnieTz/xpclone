@@ -1,9 +1,9 @@
 'use client';
 
 import React from 'react';
-import DesktopIcon from './DesktopIcon';
-import DesktopBackground from './DesktopBackground';
-import { useDesktop } from './useDesktop';
+import DesktopIcon from './components/DesktopIcon';
+import DesktopBackground from './components/DesktopBackground';
+import { useDesktop } from './hooks/useDesktop';
 
 const Desktop: React.FC = () => {
   const {
@@ -22,9 +22,11 @@ const Desktop: React.FC = () => {
           key={icon.id}
           icon={icon}
           isSelected={selectedIconIds.includes(icon.id)}
-          onSelect={(event) => handleIconSelect(icon.id, event)}
+          onSelect={(event?: React.MouseEvent) =>
+            handleIconSelect(icon.id, event)
+          }
           onDoubleClick={() => onIconDoubleClick(icon.id, icon.name)}
-          onMove={(x, y) => handleIconMove(icon.id, x, y)}
+          onMove={(x: number, y: number) => handleIconMove(icon.id, x, y)}
         />
       ))}
     </DesktopBackground>

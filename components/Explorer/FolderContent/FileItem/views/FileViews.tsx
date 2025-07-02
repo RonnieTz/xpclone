@@ -1,6 +1,6 @@
 import React from 'react';
 import Image from 'next/image';
-import { getFileIcon, formatFileSize, formatDate } from './fileUtils';
+import { getFileIcon, formatFileSize, formatDate } from '../utils/fileUtils';
 
 interface FileViewProps {
   file: {

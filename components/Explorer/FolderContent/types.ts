@@ -31,6 +31,7 @@ export interface FolderContentProps {
   // Add props for drag and drop positioning
   onFileMove?: (fileId: string, x: number, y: number) => void;
   itemPositions?: Record<string, { x: number; y: number }>; // Change from Map to Record for Redux compatibility
+  currentPath?: string; // Add currentPath prop
 }
 
 export interface FileItemProps {
@@ -43,4 +44,5 @@ export interface FileItemProps {
   // Add props for drag and drop
   onMove?: (x: number, y: number) => void;
   position?: { x: number; y: number };
+  currentPath?: string; // Add currentPath prop
 }

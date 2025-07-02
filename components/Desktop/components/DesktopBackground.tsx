@@ -13,6 +13,7 @@ const DesktopBackground: React.FC<DesktopBackgroundProps> = ({
     <div
       className="relative w-full h-screen overflow-hidden select-none"
       onClick={onDesktopClick}
+      data-desktop
       style={{
         backgroundImage: 'url(/wallpaper.webp)',
         backgroundSize: 'cover',

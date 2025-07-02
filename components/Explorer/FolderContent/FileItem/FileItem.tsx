@@ -2,8 +2,8 @@
 
 import React, { useState } from 'react';
 import { FileItemProps } from '../types';
-import { IconView, ListView, DetailsView } from './FileViews';
-import { useDragHandling } from './useDragHandling';
+import { IconView, ListView, DetailsView } from './views/FileViews';
+import { useCustomDragDrop } from './hooks/useCustomDragDrop';
 
 const FileItem: React.FC<FileItemProps> = ({
   file,
@@ -14,12 +14,19 @@ const FileItem: React.FC<FileItemProps> = ({
   windowId,
   onMove,
   position,
+  currentPath = '', // Add default value
 }) => {
   const [isHovered, setIsHovered] = useState(false);
 
-  const { itemRef, handleMouseDown } = useDragHandling({
+  // Use the passed currentPath instead of extracting from file path
+  const folderPath =
+    currentPath || file.path.substring(0, file.path.lastIndexOf('\\'));
+
+  const { itemRef, handleMouseDown, isDragging } = useCustomDragDrop({
+    file,
     viewMode,
     windowId,
+    currentPath: folderPath,
     onMove,
     onSelect,
   });
@@ -61,6 +68,11 @@ const FileItem: React.FC<FileItemProps> = ({
       }
     }
 
+    // Add dragging class
+    if (isDragging) {
+      stateClass += ' cursor-grabbing';
+    }
+
     return `${baseClass} ${viewClass} ${stateClass}`.trim();
   };
 
@@ -68,6 +80,7 @@ const FileItem: React.FC<FileItemProps> = ({
     // In icons view with custom position, use absolute positioning
     if (viewMode === 'icons' && position) {
       return {
+        position: 'absolute' as const,
         left: position.x,
         top: position.y,
         width: '80px',
@@ -103,6 +116,7 @@ const FileItem: React.FC<FileItemProps> = ({
       }}
       data-file-item
       data-file-type={file.type}
+      data-file-id={file.id}
       tabIndex={isSelected ? 0 : -1}
       ref={itemRef}
       onMouseDown={handleMouseDown}

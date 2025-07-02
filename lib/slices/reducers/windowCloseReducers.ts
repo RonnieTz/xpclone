@@ -21,5 +21,9 @@ export const closeWindowReducer = (
         topWindow.isActive = true;
       }
     }
+
+    // Note: Window-specific position cleanup will be handled by a separate reducer
+    // since we can't directly access other slices from here. The cleanup will be
+    // triggered by the windowsSlice after this reducer runs.
   }
 };

@@ -1,7 +1,10 @@
 import { useCallback } from 'react';
 import { useDispatch } from 'react-redux';
 import { findItemByPath } from '@/lib/filesystem';
-import { setItemPosition } from '@/lib/slices/folderPositionsSlice';
+import {
+  setItemPosition,
+  setMultipleItemPositions,
+} from '@/lib/slices/folderPositionsSlice';
 import { handleFileSystemItemOpen } from '../../Desktop/desktopHandlers';
 import { FileItem } from '../FolderContent/types'; // Use existing FileItem interface
 
@@ -9,17 +12,22 @@ interface UseFileOperationsProps {
   currentPath: string;
   onPathChange: (path: string) => void;
   clearSelection: () => void;
+  windowId?: string; // Add windowId
+  inheritedPositions?: Record<string, { x: number; y: number }>; // Add inherited positions
 }
 
 interface UseFileOperationsReturn {
   handleFileDoubleClick: (file: FileItem) => void;
   handleFileMove: (fileId: string, x: number, y: number) => void;
+  copyInheritedPositions: () => void; // Add function to copy inherited positions
 }
 
 export const useFileOperations = ({
   currentPath,
   onPathChange,
   clearSelection,
+  windowId, // Add windowId parameter
+  inheritedPositions, // Add inherited positions
 }: UseFileOperationsProps): UseFileOperationsReturn => {
   const dispatch = useDispatch();
 
@@ -51,14 +59,33 @@ export const useFileOperations = ({
           fileId,
           x,
           y,
+          windowId, // Pass windowId for window-specific positioning
         })
       );
     },
-    [dispatch, currentPath]
+    [dispatch, currentPath, windowId] // Add windowId to dependencies
   );
+
+  // Copy inherited positions to current window's storage
+  const copyInheritedPositions = useCallback(() => {
+    if (
+      windowId &&
+      inheritedPositions &&
+      Object.keys(inheritedPositions).length > 0
+    ) {
+      dispatch(
+        setMultipleItemPositions({
+          folderPath: currentPath,
+          positions: inheritedPositions,
+          windowId,
+        })
+      );
+    }
+  }, [dispatch, currentPath, windowId, inheritedPositions]);
 
   return {
     handleFileDoubleClick,
     handleFileMove,
+    copyInheritedPositions,
   };
 };

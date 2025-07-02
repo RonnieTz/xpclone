@@ -38,6 +38,75 @@ export const findWindowByContent = (
 };
 
 /**
+ * Find an Explorer window that has navigated to the target content in its history.
+ * This is used for openOrFocusWindow to find existing windows that have visited
+ * the target folder, even if they've navigated elsewhere.
+ */
+export const findExplorerWindowByContentOrHistory = (
+  windows: WindowState[],
+  content: string,
+  navigationHistory?: Array<{
+    windowId: string;
+    history: Array<{ path: string; title: string }>;
+    currentIndex: number;
+  }>
+): WindowState | undefined => {
+  // First check current content (exact match)
+  const exactMatch = windows.find((window) => window.content === content);
+  if (exactMatch) {
+    return exactMatch;
+  }
+
+  // For Explorer windows, check navigation history
+  if (isExplorerWindow({ content } as WindowState) && navigationHistory) {
+    // Extract the path from the target content
+    const targetPath = extractPathFromContent(content);
+    if (targetPath) {
+      // Find Explorer windows that have this path in their navigation history
+      for (const window of windows) {
+        if (isExplorerWindow(window)) {
+          const windowNav = navigationHistory.find(
+            (nav) => nav.windowId === window.id
+          );
+          if (windowNav) {
+            // Check if this window has visited the target path
+            const hasVisitedPath = windowNav.history.some((entry) => {
+              const entryContent = getContentFromPath(entry.path);
+              return entryContent === content;
+            });
+            if (hasVisitedPath) {
+              return window;
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return undefined;
+};
+
+/**
+ * Extract path from window content like "Folder: C:\Path"
+ */
+const extractPathFromContent = (content: string): string | null => {
+  if (content.includes('My Computer')) return 'My Computer';
+  if (content.includes('Recycle Bin')) return 'Recycle Bin';
+
+  const match = content.match(/Folder:\s*(.+)/);
+  return match ? match[1] : null;
+};
+
+/**
+ * Convert path back to content format
+ */
+const getContentFromPath = (path: string): string => {
+  if (path === 'My Computer') return 'My Computer';
+  if (path === 'Recycle Bin') return 'Recycle Bin';
+  return `Folder: ${path}`;
+};
+
+/**
  * Deactivate all windows in the state
  */
 export const deactivateAllWindows = (windows: WindowState[]): void => {

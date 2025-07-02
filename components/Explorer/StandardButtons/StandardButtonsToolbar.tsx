@@ -32,7 +32,6 @@ const StandardButtonsToolbar: React.FC<StandardButtonsToolbarProps> = ({
     if (canGoBack && windowId && navigation) {
       const newIndex = navigation.currentIndex - 1;
       const targetEntry = navigation.history[newIndex];
-      console.log('Going back to:', targetEntry.path, 'New index:', newIndex);
       // First update the path, then dispatch the navigation action
       onNavigate(targetEntry.path, true); // Pass true for isNavigationAction
       dispatch(navigateBack(windowId));
@@ -43,12 +42,6 @@ const StandardButtonsToolbar: React.FC<StandardButtonsToolbarProps> = ({
     if (canGoForward && windowId && navigation) {
       const newIndex = navigation.currentIndex + 1;
       const targetEntry = navigation.history[newIndex];
-      console.log(
-        'Going forward to:',
-        targetEntry.path,
-        'New index:',
-        newIndex
-      );
       // First update the path, then dispatch the navigation action
       onNavigate(targetEntry.path, true); // Pass true for isNavigationAction
       dispatch(navigateForward(windowId));
@@ -79,16 +72,6 @@ const StandardButtonsToolbar: React.FC<StandardButtonsToolbarProps> = ({
       }
     }
   };
-
-  // Debug logging
-  console.log('Navigation state:', {
-    windowId,
-    currentIndex: navigation?.currentIndex,
-    historyLength: navigation?.history.length,
-    canGoBack,
-    canGoForward,
-    history: navigation?.history.map((h) => h.path),
-  });
 
   return (
     <div

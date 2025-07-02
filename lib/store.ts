@@ -7,6 +7,7 @@ import tooltipReducer from './slices/tooltipSlice';
 import folderOptionsReducer from './slices/folderOptionsSlice';
 import navigationReducer from './slices/navigationSlice';
 import folderPositionsReducer from './slices/folderPositionsSlice';
+import { windowCleanupMiddleware } from './middleware/windowCleanupMiddleware';
 
 export const store = configureStore({
   reducer: {
@@ -27,8 +28,9 @@ export const store = configureStore({
         // Ignore Date objects in fileSystemItem fields
         ignoredPaths: ['desktop.icons'],
       },
-    }),
+    }).concat(windowCleanupMiddleware), // Add the window cleanup middleware
 });
 
+// Extract RootState type from the store
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;

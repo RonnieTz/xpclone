@@ -159,12 +159,25 @@ const desktopSlice = createSlice({
         state.icons.map((icon) => [icon.id, { x: icon.x, y: icon.y }])
       );
 
-      // Check for pending drop position
-      const pendingDropStr =
-        typeof window !== 'undefined'
-          ? sessionStorage.getItem('pendingDropPosition')
-          : null;
-      const pendingDrop = pendingDropStr ? JSON.parse(pendingDropStr) : null;
+      // Check for all pending drop positions (with unique keys)
+      const allPendingDrops: Array<{ key: string; data: any }> = [];
+      if (typeof window !== 'undefined') {
+        // Find all keys that start with 'pendingDropPosition_'
+        for (let i = 0; i < sessionStorage.length; i++) {
+          const key = sessionStorage.key(i);
+          if (key && key.startsWith('pendingDropPosition_')) {
+            const dataStr = sessionStorage.getItem(key);
+            if (dataStr) {
+              try {
+                const data = JSON.parse(dataStr);
+                allPendingDrops.push({ key, data });
+              } catch (e) {
+                console.warn('Failed to parse pending drop position:', key, e);
+              }
+            }
+          }
+        }
+      }
 
       const newIcons = createDesktopIconsFromFileSystem();
 
@@ -174,14 +187,31 @@ const desktopSlice = createSlice({
         if (existingPos) {
           icon.x = existingPos.x;
           icon.y = existingPos.y;
-        } else if (pendingDrop && icon.name === pendingDrop.name) {
-          // Position new icon at drop coordinates
-          icon.x = pendingDrop.x;
-          icon.y = pendingDrop.y;
+        } else {
+          // Check all pending drops for this icon
+          for (const { key, data: pendingDrop } of allPendingDrops) {
+            const nameMatch =
+              icon.name === pendingDrop.name ||
+              icon.name.toLowerCase() === pendingDrop.name.toLowerCase() ||
+              icon.fileSystemItem?.name === pendingDrop.name ||
+              icon.fileSystemItem?.name?.toLowerCase() ===
+                pendingDrop.name.toLowerCase();
+            const idMatch =
+              icon.id === pendingDrop.id ||
+              icon.fileSystemItem?.id === pendingDrop.id;
 
-          // Clear the pending drop position
-          if (typeof window !== 'undefined') {
-            sessionStorage.removeItem('pendingDropPosition');
+            if (nameMatch || idMatch) {
+              // Position new icon at drop coordinates
+
+              icon.x = pendingDrop.x;
+              icon.y = pendingDrop.y;
+
+              // Clear this specific pending drop position
+              if (typeof window !== 'undefined') {
+                sessionStorage.removeItem(key);
+              }
+              break; // Found a match, stop checking other pending drops for this icon
+            }
           }
         }
       });

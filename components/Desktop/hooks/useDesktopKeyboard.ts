@@ -6,8 +6,8 @@ import {
   selectMultipleIcons,
   setFocusIcon,
 } from '@/lib/slices/desktopSlice';
-import { findClosestIcon } from './desktopNavigation';
-import { handleIconDoubleClick } from './desktopHandlers';
+import { findClosestIcon } from '../desktopNavigation';
+import { handleIconDoubleClick } from '../desktopHandlers';
 
 export const useDesktopKeyboard = (
   selectedIconId: string | null,
@@ -110,33 +110,12 @@ export const useDesktopKeyboard = (
           (icon) => icon.id === targetIcon.id
         );
 
-        console.log('Desktop Shift+Arrow Debug:', {
-          direction,
-          anchorIndex,
-          targetIndex,
-          currentSelection: selectedIconIds,
-          anchorIcon: visualIcons[anchorIndex]?.name,
-          targetIcon: targetIcon.name,
-          currentIcon: currentIcon.name,
-          lastSelectedId: selectedIconIds[selectedIconIds.length - 1],
-          visualIconsLength: visualIcons.length,
-        });
-
         if (targetIndex !== -1) {
           const start = Math.min(anchorIndex, targetIndex);
           const end = Math.max(anchorIndex, targetIndex);
           const rangeIds = visualIcons
             .slice(start, end + 1)
             .map((icon) => icon.id);
-
-          console.log('Range selection:', {
-            start,
-            end,
-            rangeIds: rangeIds.map(
-              (id) => visualIcons.find((icon) => icon.id === id)?.name
-            ),
-            rangeLength: rangeIds.length,
-          });
 
           dispatch(selectMultipleIcons(rangeIds));
         }

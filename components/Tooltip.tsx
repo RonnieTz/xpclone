@@ -38,7 +38,6 @@ const Tooltip: React.FC<TooltipProps> = ({ text, targetRef, tooltipId }) => {
   const handleMouseEnter = useCallback(
     (event: MouseEvent) => {
       isMouseInsideRef.current = true;
-      console.log('Mouse entered tooltip target', tooltipId);
 
       lastMousePositionRef.current = { x: event.clientX, y: event.clientY };
 
@@ -82,7 +81,6 @@ const Tooltip: React.FC<TooltipProps> = ({ text, targetRef, tooltipId }) => {
     const element = targetRef.current;
     if (element) {
       const mouseEnterHandler = (e: Event) => {
-        console.log('Mouse entered', tooltipId);
         handleMouseEnter(e as MouseEvent);
       };
 
@@ -91,7 +89,6 @@ const Tooltip: React.FC<TooltipProps> = ({ text, targetRef, tooltipId }) => {
       };
 
       const mouseLeaveHandler = () => {
-        console.log('Mouse left', tooltipId);
         handleMouseLeave();
       };
 

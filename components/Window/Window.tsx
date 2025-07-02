@@ -227,6 +227,7 @@ const Window: React.FC<WindowProps> = ({ window }) => {
     <div
       ref={windowRef}
       data-window
+      data-window-id={window.id}
       className={`absolute bg-gray-100 shadow-lg overflow-hidden ${
         window.isMaximized ? '' : 'rounded-t-lg'
       } ${isDragging ? 'cursor-grabbing' : ''} ${

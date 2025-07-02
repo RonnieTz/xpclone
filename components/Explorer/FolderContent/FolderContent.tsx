@@ -14,6 +14,7 @@ const FolderContent: React.FC<FolderContentProps> = ({
   windowId,
   onFileMove,
   itemPositions,
+  currentPath, // Add currentPath prop
 }) => {
   // Convert Redux positions Record to Map for internal use
   const [localPositions, setLocalPositions] = useState<
@@ -23,9 +24,19 @@ const FolderContent: React.FC<FolderContentProps> = ({
   // Sync Redux positions to local Map when itemPositions changes
   useEffect(() => {
     if (itemPositions) {
-      setLocalPositions(new Map(Object.entries(itemPositions)));
+      const newMap = new Map(Object.entries(itemPositions));
+      // Only update if the positions are actually different to prevent loops
+      if (
+        localPositions.size !== newMap.size ||
+        !Array.from(newMap.entries()).every(([key, value]) => {
+          const existing = localPositions.get(key);
+          return existing && existing.x === value.x && existing.y === value.y;
+        })
+      ) {
+        setLocalPositions(newMap);
+      }
     }
-  }, [itemPositions]);
+  }, [itemPositions]); // Remove localPositions from dependencies to prevent loop
 
   // Calculate default grid positions for items that don't have custom positions
   const calculateDefaultPosition = useCallback((index: number) => {
@@ -45,14 +56,90 @@ const FolderContent: React.FC<FolderContentProps> = ({
     };
   }, []);
 
+  // Normalize folder paths to ensure consistent matching
+  const normalizeFolderPath = useCallback((path: string) => {
+    if (!path) return '';
+    // Remove trailing slashes and normalize backslashes
+    return path
+      .replace(/[\\\/]+$/, '')
+      .replace(/\//g, '\\')
+      .trim();
+  }, []);
+
   // Initialize positions for items that don't have custom positions
   useEffect(() => {
-    if (viewMode === 'icons') {
-      const newPositions = new Map(localPositions);
+    if (viewMode === 'icons' && files.length > 0) {
+      // Only run if we actually have files and no positions set yet
+      const hasAnyPositions = localPositions.size > 0;
+      if (hasAnyPositions) return; // Skip if we already have positions
+
+      const newPositions = new Map();
       let hasNewPositions = false;
 
+      // Normalize the current path for consistent matching (handle undefined case)
+      const normalizedCurrentPath = normalizeFolderPath(currentPath || '');
+
+      // Check for pending folder positions first (from desktop-to-folder drops)
+      const allPendingFolderPositions: Array<{
+        key: string;
+        data: {
+          fileId: string;
+          fileName: string;
+          folderPath: string;
+          x: number;
+          y: number;
+        };
+      }> = [];
+      if (typeof window !== 'undefined' && normalizedCurrentPath) {
+        for (let i = 0; i < sessionStorage.length; i++) {
+          const key = sessionStorage.key(i);
+          if (key && key.startsWith('pendingFolderPosition_')) {
+            const dataStr = sessionStorage.getItem(key);
+            if (dataStr) {
+              try {
+                const data = JSON.parse(dataStr);
+                // Normalize both paths for comparison
+                const normalizedDataPath = normalizeFolderPath(data.folderPath);
+                if (normalizedDataPath === normalizedCurrentPath) {
+                  allPendingFolderPositions.push({ key, data });
+                }
+              } catch (e) {
+                console.warn(
+                  'Failed to parse pending folder position:',
+                  key,
+                  e
+                );
+              }
+            }
+          }
+        }
+      }
+
       files.forEach((file, index) => {
-        if (!newPositions.has(file.id)) {
+        // First check if there's a pending position for this file
+        let appliedPendingPosition = false;
+        for (const { key, data: pendingPos } of allPendingFolderPositions) {
+          const fileIdMatch = file.id === pendingPos.fileId;
+          const fileNameMatch = file.name === pendingPos.fileName;
+
+          if (fileIdMatch || fileNameMatch) {
+            newPositions.set(file.id, { x: pendingPos.x, y: pendingPos.y });
+            hasNewPositions = true;
+            appliedPendingPosition = true;
+
+            // Save to Redux via parent callback
+            onFileMove?.(file.id, pendingPos.x, pendingPos.y);
+
+            // Clear this pending position
+            if (typeof window !== 'undefined') {
+              sessionStorage.removeItem(key);
+            }
+            break;
+          }
+        }
+
+        // If no pending position was applied, use default
+        if (!appliedPendingPosition) {
           const defaultPos = calculateDefaultPosition(index);
           newPositions.set(file.id, defaultPos);
           hasNewPositions = true;
@@ -66,7 +153,12 @@ const FolderContent: React.FC<FolderContentProps> = ({
         setLocalPositions(newPositions);
       }
     }
-  }, [files, viewMode, localPositions, calculateDefaultPosition, onFileMove]);
+  }, [
+    files,
+    viewMode,
+    currentPath,
+    // Remove callbacks from dependencies to prevent re-runs
+  ]);
 
   const handleFileMove = (fileId: string, x: number, y: number) => {
     const newPositions = new Map(localPositions);
@@ -117,6 +209,8 @@ const FolderContent: React.FC<FolderContentProps> = ({
     <div
       className="w-full h-full overflow-auto p-2"
       onClick={handleBackgroundClick}
+      data-folder-content={windowId}
+      data-folder-path={currentPath}
     >
       {files.length === 0 ? (
         <div className="w-full h-full flex items-center justify-center">
@@ -149,6 +243,7 @@ const FolderContent: React.FC<FolderContentProps> = ({
               position={
                 viewMode === 'icons' ? localPositions.get(file.id) : undefined
               }
+              currentPath={currentPath}
             />
           ))}
         </div>

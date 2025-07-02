@@ -64,6 +64,7 @@ const Explorer: React.FC<ExplorerProps> = ({ path, windowId }) => {
             windowId={windowId}
             onFileMove={handleFileMove}
             itemPositions={persistentPositions}
+            currentPath={currentPath}
           />
         </div>
       </div>
