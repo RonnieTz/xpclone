@@ -6,8 +6,8 @@ import {
   selectMultipleIcons,
   setFocusIcon,
 } from '@/lib/slices/desktopSlice';
-import { findClosestIcon } from '../desktopNavigation';
-import { handleIconDoubleClick } from '../desktopHandlers';
+import { findClosestIcon } from '../utils/desktopNavigation';
+import { handleIconDoubleClick } from '../utils/desktopHandlers';
 
 export const useDesktopKeyboard = (
   selectedIconId: string | null,

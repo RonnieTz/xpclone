@@ -5,7 +5,7 @@ import {
   setItemPosition,
   setMultipleItemPositions,
 } from '@/lib/slices/folderPositionsSlice';
-import { handleFileSystemItemOpen } from '../../Desktop/desktopHandlers';
+import { handleFileSystemItemOpen } from '../../Desktop/utils/desktopHandlers';
 import { FileItem } from '../FolderContent/types'; // Use existing FileItem interface
 
 interface UseFileOperationsProps {

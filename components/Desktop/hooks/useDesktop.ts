@@ -1,7 +1,7 @@
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '@/lib/store';
 import { moveIcon } from '@/lib/slices/desktopSlice';
-import { getVisuallyOrderedIcons } from '../desktopUtils';
+import { getVisuallyOrderedIcons } from '../utils/desktopUtils';
 import { useDesktopSelection } from './useDesktopSelection';
 import { useDesktopDoubleClick } from './useDesktopDoubleClick';
 import { useDesktopKeyboard } from './useDesktopKeyboard';

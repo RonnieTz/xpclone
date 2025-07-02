@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useDispatch } from 'react-redux';
 import { DesktopIcon } from '@/lib/slices/desktopSlice';
-import { handleIconDoubleClick } from '../desktopHandlers';
+import { handleIconDoubleClick } from '../utils/desktopHandlers';
 
 export const useDesktopDoubleClick = (
   icons: DesktopIcon[],
