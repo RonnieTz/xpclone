@@ -2,8 +2,8 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { FolderContentProps, FileItem } from './types';
-import UnifiedItem from '@/components/Common/UnifiedItem';
-import { convertFileItemToUnified } from '@/components/Common/UnifiedItem/utils';
+import UnifiedItem from '@/components/Common/Item';
+import { convertFileItemToUnified } from '@/components/Common/Item/utils';
 
 const FolderContent: React.FC<FolderContentProps> = ({
   files = [],

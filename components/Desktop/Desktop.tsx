@@ -5,8 +5,8 @@ import React from 'react';
 import DesktopIcon from './components/DesktopIcon';
 import DesktopBackground from './components/DesktopBackground';
 import { useDesktop } from './hooks/useDesktop';
-import UnifiedItem from '@/components/Common/UnifiedItem';
-import { convertDesktopIconToUnified } from '@/components/Common/UnifiedItem/utils';
+import UnifiedItem from '@/components/Common/Item';
+import { convertDesktopIconToUnified } from '@/components/Common/Item/utils';
 
 const Desktop: React.FC = () => {
   const {
