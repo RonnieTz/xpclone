@@ -42,8 +42,6 @@ export const useFileDropOperations = ({
   // Handle drops to different locations
   const handleCrossLocationDrop = useCallback(
     (dropTarget: DropTarget, mouseEvent?: MouseEvent) => {
-      const itemPath = getCurrentItemPath(context, currentPath);
-
       // Perform the actual filesystem move operation FIRST
       const moveSuccess = moveItemToPath(item.id, dropTarget.path);
 
@@ -163,7 +161,7 @@ export const useFileDropOperations = ({
         dispatch(focusWindow(dropTarget.windowId));
       }
     },
-    [context, currentPath, getCurrentItemPath, dispatch, item]
+    [context, dispatch, item]
   );
 
   // Handle same-location repositioning
@@ -216,11 +214,11 @@ export const useFileDropOperations = ({
         onMove(newX, newY);
       }
     },
-    [context, windowId, onMove, item.name]
+    [context, windowId, onMove]
   );
 
   // Refresh UI after successful drop
-  const refreshUIAfterDrop = useCallback((dropTarget: DropTarget) => {
+  const refreshUIAfterDrop = useCallback(() => {
     // Implementation for UI refresh
   }, []);
 

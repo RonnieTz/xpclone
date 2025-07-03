@@ -120,7 +120,13 @@ export const useExplorer = ({
         copyInheritedPositions();
       }
     }
-  }, [currentPath, windowId, wasInherited]); // Removed copyInheritedPositions and persistentPositions from dependencies
+  }, [
+    currentPath,
+    windowId,
+    wasInherited,
+    copyInheritedPositions,
+    persistentPositions,
+  ]); // Add missing dependencies
 
   // Reset initialization flag when path changes
   useEffect(() => {

@@ -39,10 +39,7 @@ export const useUnifiedDragDrop = ({
       ? 'C:\\Documents and Settings\\Administrator\\Desktop'
       : currentPath;
 
-  const { detectDropTarget } = useDropTargetDetection(
-    windowId,
-    effectiveCurrentPath
-  );
+  const { detectDropTarget } = useDropTargetDetection(windowId);
   const { handleFileDrop } = useFileDropOperations({
     item,
     context,

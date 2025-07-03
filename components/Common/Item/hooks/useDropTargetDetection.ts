@@ -1,9 +1,6 @@
 import { useCallback } from 'react';
 
-export const useDropTargetDetection = (
-  windowId?: string,
-  currentPath?: string
-) => {
+export const useDropTargetDetection = (windowId?: string) => {
   const detectDropTarget = useCallback(
     (event: MouseEvent) => {
       const element = document.elementFromPoint(event.clientX, event.clientY);
@@ -47,7 +44,7 @@ export const useDropTargetDetection = (
 
       return null;
     },
-    [currentPath, windowId]
+    [windowId]
   );
 
   const handleDropTargetChange = useCallback(

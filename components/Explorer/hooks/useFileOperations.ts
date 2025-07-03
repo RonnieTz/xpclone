@@ -63,7 +63,7 @@ export const useFileOperations = ({
         })
       );
     },
-    [dispatch, currentPath, windowId] // Add windowId to dependencies
+    [dispatch, currentPath, windowId] // Remove inheritedPositions as it's not used in this function
   );
 
   // Copy inherited positions to current window's storage
@@ -81,7 +81,7 @@ export const useFileOperations = ({
         })
       );
     }
-  }, [dispatch, currentPath, windowId]); // Remove inheritedPositions from dependencies to prevent recreation
+  }, [dispatch, currentPath, windowId, inheritedPositions]); // Add inheritedPositions back as it's used in the function
 
   return {
     handleFileDoubleClick,
