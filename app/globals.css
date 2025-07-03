@@ -34,3 +34,13 @@ body {
   user-select: none;
   box-sizing: border-box;
 }
+
+/* Drag and Drop Ghost Element Styles */
+.drag-ghost {
+  pointer-events: none !important;
+  z-index: 10000 !important;
+  opacity: 0.8 !important;
+  transform: none !important;
+  transition: none !important;
+  cursor: grabbing !important;
+}

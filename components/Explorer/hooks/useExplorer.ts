@@ -105,27 +105,27 @@ export const useExplorer = ({
       inheritedPositions: wasInherited ? persistentPositions : undefined,
     });
 
-  // Copy inherited positions to current window if needed - USE EFFECT TO PREVENT INFINITE LOOP
+  // Copy inherited positions to current window if needed - FIXED TO PREVENT INFINITE LOOP
   useEffect(() => {
     // Only run once per path/window combination
-    const positionsKey = `${windowId}-${currentPath}`;
-
     if (
       wasInherited &&
       Object.keys(persistentPositions).length > 0 &&
-      !hasInitializedPositions.current
+      !hasInitializedPositions.current &&
+      windowId
     ) {
       hasInitializedPositions.current = true;
-      copyInheritedPositions();
-    }
-
-    // Reset flag when path changes
-    return () => {
-      if (currentPath) {
-        hasInitializedPositions.current = false;
+      // Call copyInheritedPositions directly without dependency to break the loop
+      if (persistentPositions && Object.keys(persistentPositions).length > 0) {
+        copyInheritedPositions();
       }
-    };
-  }, [currentPath, windowId]); // Only depend on path and window changes, not position data
+    }
+  }, [currentPath, windowId, wasInherited]); // Removed copyInheritedPositions and persistentPositions from dependencies
+
+  // Reset initialization flag when path changes
+  useEffect(() => {
+    hasInitializedPositions.current = false;
+  }, [currentPath]);
 
   // Keyboard navigation
   useExplorerKeyboard({

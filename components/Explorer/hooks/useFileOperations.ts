@@ -81,7 +81,7 @@ export const useFileOperations = ({
         })
       );
     }
-  }, [dispatch, currentPath, windowId, inheritedPositions]);
+  }, [dispatch, currentPath, windowId]); // Remove inheritedPositions from dependencies to prevent recreation
 
   return {
     handleFileDoubleClick,

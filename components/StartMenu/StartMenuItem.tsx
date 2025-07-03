@@ -37,11 +37,7 @@ const StartMenuItem: React.FC<StartMenuItemProps> = ({
   return (
     <>
       {!hasExpandArrow && (
-        <Tooltip
-          text={description || title}
-          targetRef={itemRef}
-          tooltipId={title}
-        />
+        <Tooltip text={description || title} targetRef={itemRef} />
       )}
       <div
         ref={itemRef}

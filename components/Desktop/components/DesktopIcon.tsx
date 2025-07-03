@@ -4,7 +4,7 @@ import React from 'react';
 import Image from 'next/image';
 import { DesktopIcon as DesktopIconType } from '@/lib/slices/desktopSlice';
 import { getIconPath } from '@/lib/iconMapping';
-import { useDesktopDragDrop } from '../hooks/useDesktopDragDrop';
+import { useUnifiedDragDrop } from '../../Common/Item/hooks/useUnifiedDragDrop';
 
 interface DesktopIconProps {
   icon: DesktopIconType;
@@ -21,11 +21,24 @@ const DesktopIcon: React.FC<DesktopIconProps> = ({
   onDoubleClick,
   onMove,
 }) => {
-  const { itemRef, handleMouseDown, isDragging } = useDesktopDragDrop(
-    icon,
+  // Convert DesktopIcon to UnifiedItemData format
+  const unifiedItem = {
+    id: icon.fileSystemItem?.id || icon.name,
+    name: icon.name,
+    type: icon.fileSystemItem?.type || 'file',
+    path: 'C:\\Documents and Settings\\Administrator\\Desktop',
+    fileSystemItem: icon.fileSystemItem,
+    icon: icon.icon,
+    x: icon.x,
+    y: icon.y,
+  };
+
+  const { itemRef, handleMouseDown, isDragging } = useUnifiedDragDrop({
+    item: unifiedItem,
+    context: 'desktop',
     onSelect,
-    onMove
-  );
+    onMove,
+  });
 
   return (
     <div

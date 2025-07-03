@@ -1,11 +1,7 @@
 import { useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/lib/store';
-import {
-  selectIcon,
-  selectMultipleIcons,
-  setFocusIcon,
-} from '@/lib/slices/desktopSlice';
+import { selectIcon, selectMultipleIcons } from '@/lib/slices/desktopSlice';
 import { findClosestIcon } from '../utils/desktopNavigation';
 import { handleIconDoubleClick } from '../utils/desktopHandlers';
 
@@ -55,7 +51,6 @@ export const useDesktopKeyboard = (
       if (withShift && selectedIconIds.length > 1) {
         // In range selection, determine which end of the selection to extend from
         const visualIcons = getVisuallyOrderedIcons();
-        const anchorIcon = visualIcons[anchorIndex];
 
         // Get the indices of the first and last selected icons in visual order
         const firstSelectedIndex = Math.min(

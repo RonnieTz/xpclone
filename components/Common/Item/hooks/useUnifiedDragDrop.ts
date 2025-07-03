@@ -1,65 +1,86 @@
 import { useRef, useCallback, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { focusWindow } from '@/lib/slices/windowsSlice';
-import { UseCustomDragDropProps, DragState } from '../types/dragDropTypes';
+import { focusWindow, unfocusAllWindows } from '@/lib/slices/windowsSlice';
+import { DragState, UseUnifiedDragDropProps } from '../types/dragDropTypes';
+import { useGhostElement } from './useGhostElement';
 import { useDropTargetDetection } from './useDropTargetDetection';
-import { useDragGhost } from './useDragGhost';
 import { useFileDropOperations } from './useFileDropOperations';
 
-export const useCustomDragDrop = ({
-  file,
-  viewMode,
-  windowId,
+export const useUnifiedDragDrop = ({
+  item,
+  context,
+  viewMode = 'icons',
   currentPath,
-  onMove,
+  windowId,
   onSelect,
-}: UseCustomDragDropProps) => {
+  onMove,
+}: UseUnifiedDragDropProps) => {
   const dispatch = useDispatch();
   const itemRef = useRef<HTMLDivElement>(null);
   const [dragState, setDragState] = useState<DragState>({
     isDragging: false,
-    draggedElement: null,
+    ghostElement: null,
     originalPosition: null,
     startMousePos: { x: 0, y: 0 },
     dragOffset: { x: 0, y: 0 },
   });
 
   // Use the separated hooks
-  const { findDropTarget } = useDropTargetDetection(windowId, currentPath);
-  const { getViewportPosition, createDragGhost } = useDragGhost();
+  const {
+    getViewportPosition,
+    createGhostElement,
+    updateGhostPosition,
+    removeGhostElement,
+  } = useGhostElement();
+
+  // For desktop context, use desktop path; for folder context, use current path
+  const effectiveCurrentPath =
+    context === 'desktop'
+      ? 'C:\\Documents and Settings\\Administrator\\Desktop'
+      : currentPath;
+
+  const { detectDropTarget } = useDropTargetDetection(
+    windowId,
+    effectiveCurrentPath
+  );
   const { handleFileDrop } = useFileDropOperations({
-    file,
-    currentPath,
+    item,
+    context,
+    currentPath: effectiveCurrentPath,
+    windowId,
     onMove,
-    windowId, // Add windowId parameter
   });
 
-  // Handle mouse down - start potential drag
+  // Check if item should be draggable
+  const isDraggable = useCallback(() => {
+    if (context === 'desktop') return true;
+    if (context === 'folder' && viewMode === 'icons') return true;
+    return false;
+  }, [context, viewMode]);
+
+  // Main mouse down handler
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
-      // Focus the window first if it's not already focused
-      if (windowId) {
-        dispatch(focusWindow(windowId));
-      }
-
-      // Only allow dragging in icons view mode
-      if (viewMode !== 'icons' || e.button !== 0) {
-        // For non-icons view, handle selection here
-        e.preventDefault();
-        e.stopPropagation();
-        setTimeout(() => {
-          onSelect?.(e);
-        }, 0);
-        return;
-      }
+      if (e.button !== 0) return; // Only handle left mouse button
 
       e.preventDefault();
       e.stopPropagation();
 
       // Handle selection first
       setTimeout(() => {
-        onSelect?.(e);
+        onSelect?.(e as React.MouseEvent<HTMLElement>);
       }, 0);
+
+      // For desktop context, unfocus all windows when starting drag
+      if (context === 'desktop') {
+        dispatch(unfocusAllWindows());
+      } else if (windowId) {
+        // Focus window if in folder context
+        dispatch(focusWindow(windowId));
+      }
+
+      // Return early if not draggable
+      if (!isDraggable()) return;
 
       if (!itemRef.current) return;
 
@@ -73,7 +94,7 @@ export const useCustomDragDrop = ({
 
       setDragState({
         isDragging: false,
-        draggedElement: null,
+        ghostElement: null,
         originalPosition: viewportPos,
         startMousePos,
         dragOffset,
@@ -92,9 +113,8 @@ export const useCustomDragDrop = ({
           hasMoved = true;
 
           if (itemRef.current) {
-            // Get the exact current position of the original element
             const currentRect = getViewportPosition(itemRef.current);
-            ghost = createDragGhost(itemRef.current);
+            ghost = createGhostElement(itemRef.current);
 
             // Position ghost exactly where the original element is
             ghost.style.left = `${currentRect.x}px`;
@@ -104,23 +124,21 @@ export const useCustomDragDrop = ({
 
             // Hide the original element during drag
             itemRef.current.style.opacity = '0';
-            itemRef.current.style.pointerEvents = 'none'; // Exclude from elementsFromPoint
+            itemRef.current.style.pointerEvents = 'none';
 
             setDragState((prev) => ({
               ...prev,
               isDragging: true,
-              draggedElement: ghost,
+              ghostElement: ghost,
             }));
           }
         }
 
         if (hasMoved && ghost) {
-          // Update the ghost element position using the drag offset
+          // Update ghost position
           const newX = moveEvent.clientX - dragOffset.x;
           const newY = moveEvent.clientY - dragOffset.y;
-
-          ghost.style.left = `${newX}px`;
-          ghost.style.top = `${newY}px`;
+          updateGhostPosition(ghost, newX, newY);
         }
       };
 
@@ -130,29 +148,22 @@ export const useCustomDragDrop = ({
 
         if (hasMoved && itemRef.current) {
           // Find drop target and handle file drop
-          const dropTarget = findDropTarget(upEvent.clientX, upEvent.clientY);
+          const dropTarget = detectDropTarget(upEvent);
+          handleFileDrop(dropTarget, upEvent); // Pass the mouse event for position calculation
 
-          handleFileDrop(dropTarget, upEvent, dragOffset);
-
-          // Only reset the temporary drag styles, not positioning
-          if (itemRef.current) {
-            itemRef.current.style.opacity = '';
-            itemRef.current.style.pointerEvents = '';
-            // Remove any temporary z-index that might have been applied during drag
-            if (itemRef.current.style.zIndex === '999') {
-              itemRef.current.style.zIndex = '';
-            }
-          }
+          // Restore original element
+          itemRef.current.style.opacity = '';
+          itemRef.current.style.pointerEvents = '';
 
           // Remove ghost element
           if (ghost) {
-            document.body.removeChild(ghost);
+            removeGhostElement(ghost);
           }
         }
 
         setDragState({
           isDragging: false,
-          draggedElement: null,
+          ghostElement: null,
           originalPosition: null,
           startMousePos: { x: 0, y: 0 },
           dragOffset: { x: 0, y: 0 },
@@ -163,17 +174,17 @@ export const useCustomDragDrop = ({
       document.addEventListener('mouseup', handleMouseUp);
     },
     [
-      viewMode,
       windowId,
-      file,
-      currentPath,
       onSelect,
-      onMove,
-      dispatch,
+      isDraggable,
+      context,
       getViewportPosition,
-      findDropTarget,
-      createDragGhost,
+      createGhostElement,
+      updateGhostPosition,
+      removeGhostElement,
+      detectDropTarget,
       handleFileDrop,
+      dispatch,
     ]
   );
 

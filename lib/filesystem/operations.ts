@@ -85,8 +85,9 @@ export function moveItemToPath(
 
   // If it's a folder, update all children paths recursively
   if ('children' in movedItem) {
-    movedItem.children = updateChildrenPathsImmutable(
+    movedItem.children = updateChildrenPaths(
       movedItem.children,
+      originalItem.path,
       newPath
     );
   }
@@ -120,15 +121,35 @@ export function copyItemToPath(
 }
 
 // Helper functions for file operations
-function updateChildrenPaths(item: FileSystemItem, newBasePath: string): void {
-  if ('children' in item) {
-    item.children.forEach((child) => {
-      child.path = `${newBasePath}\\${child.name}`;
-      if ('children' in child) {
-        updateChildrenPaths(child, child.path);
-      }
-    });
-  }
+function updateChildrenPaths(
+  children: FileSystemItem[],
+  oldBasePath: string,
+  newBasePath: string
+): FileSystemItem[] {
+  return children.map((child) => {
+    const relativePath = child.path.substring(oldBasePath.length);
+    const newPath = newBasePath + relativePath;
+
+    const updatedChild = {
+      ...child,
+      path: newPath,
+      dateModified: new Date(),
+    };
+
+    // Recursively update children if this is a folder
+    if ('children' in updatedChild) {
+      return {
+        ...updatedChild,
+        children: updateChildrenPaths(
+          updatedChild.children,
+          oldBasePath,
+          newBasePath
+        ),
+      } as FileSystemItem;
+    }
+
+    return updatedChild;
+  });
 }
 
 function deepCopyItem(
@@ -156,27 +177,4 @@ function deepCopyItem(
   }
 
   return baseProps;
-}
-
-function updateChildrenPathsImmutable(
-  children: FileSystemItem[],
-  newBasePath: string
-): FileSystemItem[] {
-  return children.map((child) => {
-    const newPath = `${newBasePath}\\${child.name}`;
-    const newChild: FileSystemItem = {
-      ...child,
-      path: newPath,
-      dateModified: new Date(),
-    };
-
-    if ('children' in newChild) {
-      newChild.children = updateChildrenPathsImmutable(
-        newChild.children,
-        newPath
-      );
-    }
-
-    return newChild;
-  });
 }

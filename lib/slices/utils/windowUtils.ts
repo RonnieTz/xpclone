@@ -1,4 +1,4 @@
-import { WindowState, WindowsState } from '../types/windowTypes';
+import { WindowState } from '../types/windowTypes';
 
 /**
  * Find the top-most window (highest z-index) from a list of windows
@@ -124,4 +124,16 @@ export const isExplorerWindow = (window: WindowState): boolean => {
     window.content.includes('My Computer') ||
     window.content.includes('Recycle Bin')
   );
+};
+
+/**
+ * Create a new window object
+ */
+export const createWindow = (title: string, content: string) => {
+  return {
+    id: Date.now().toString(),
+    title,
+    content,
+    isActive: true,
+  };
 };

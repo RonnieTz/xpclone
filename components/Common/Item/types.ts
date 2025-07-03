@@ -2,7 +2,15 @@ export interface UnifiedItemData {
   id: string;
   name: string;
   icon?: string;
-  type: 'file' | 'folder' | 'application' | 'shortcut';
+  type:
+    | 'file'
+    | 'folder'
+    | 'application'
+    | 'shortcut'
+    | 'program'
+    | 'image'
+    | 'sound'
+    | 'drive';
   size?: number;
   dateModified?: Date;
   path?: string;
@@ -19,13 +27,17 @@ export interface UnifiedItemProps {
   position?: { x: number; y: number };
 
   // Event handlers
-  onSelect?: (event?: React.MouseEvent) => void;
+  onSelect?: (event?: React.MouseEvent<HTMLElement>) => void;
   onDoubleClick?: () => void;
   onMove?: (x: number, y: number) => void;
 
   // Context-specific styling
   className?: string;
   style?: React.CSSProperties;
+
+  // New props for unified drag and drop
+  currentPath?: string;
+  windowId?: string;
 }
 
 export interface ItemRenderProps {

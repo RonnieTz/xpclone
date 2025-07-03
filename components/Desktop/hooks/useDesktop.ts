@@ -17,7 +17,6 @@ export const useDesktop = () => {
 
   // Use selection hook
   const {
-    lastSelectedIndex,
     anchorIndex,
     setAnchorIndex,
     handleDesktopClick,

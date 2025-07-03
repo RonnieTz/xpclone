@@ -23,6 +23,9 @@ export const IconView: React.FC<ItemRenderProps> = ({
           className={`object-contain ${
             isSelected && isDesktop ? 'brightness-65' : ''
           }`}
+          style={{
+            filter: 'drop-shadow(2px 2px 1px rgba(0, 0, 0, 0.4))',
+          }}
           draggable={false}
         />
       </div>

@@ -4,10 +4,9 @@ import ReactDOM from 'react-dom';
 interface TooltipProps {
   text: string;
   targetRef: React.RefObject<HTMLDivElement | null>;
-  tooltipId: string;
 }
 
-const Tooltip: React.FC<TooltipProps> = ({ text, targetRef, tooltipId }) => {
+const Tooltip: React.FC<TooltipProps> = ({ text, targetRef }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0 });
   const showTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -35,20 +34,17 @@ const Tooltip: React.FC<TooltipProps> = ({ text, targetRef, tooltipId }) => {
     }, 1000);
   };
 
-  const handleMouseEnter = useCallback(
-    (event: MouseEvent) => {
-      isMouseInsideRef.current = true;
+  const handleMouseEnter = useCallback((event: MouseEvent) => {
+    isMouseInsideRef.current = true;
 
-      lastMousePositionRef.current = { x: event.clientX, y: event.clientY };
+    lastMousePositionRef.current = { x: event.clientX, y: event.clientY };
 
-      // Hide any existing tooltip immediately
-      setIsVisible(false);
+    // Hide any existing tooltip immediately
+    setIsVisible(false);
 
-      // Schedule this tooltip to show
-      scheduleTooltipShow(event.clientX, event.clientY);
-    },
-    [tooltipId]
-  );
+    // Schedule this tooltip to show
+    scheduleTooltipShow(event.clientX, event.clientY);
+  }, []);
 
   const handleMouseMove = useCallback((event: MouseEvent) => {
     // Throttle mouse move events to prevent excessive executions
@@ -112,13 +108,7 @@ const Tooltip: React.FC<TooltipProps> = ({ text, targetRef, tooltipId }) => {
         setIsVisible(false);
       };
     }
-  }, [
-    tooltipId,
-    targetRef,
-    handleMouseEnter,
-    handleMouseLeave,
-    handleMouseMove,
-  ]);
+  }, [targetRef, handleMouseEnter, handleMouseLeave, handleMouseMove]);
 
   if (!isVisible) return null;
 

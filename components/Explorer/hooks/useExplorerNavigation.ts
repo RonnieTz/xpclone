@@ -53,12 +53,19 @@ export const useExplorerNavigation = ({
         })
       );
     }
-  }, [windowId, dispatch]);
+  }, [windowId, currentPath, dispatch]);
 
   // Load files when path changes
   useEffect(() => {
     loadFilesForPath(currentPath);
   }, [currentPath, loadFilesForPath]);
+
+  // Handle navigation effects when path changes
+  useEffect(() => {
+    if (currentPath) {
+      // Add any additional effects needed when currentPath changes
+    }
+  }, [currentPath]);
 
   const handlePathChange = useCallback(
     (newPath: string, isNavigationAction?: boolean) => {

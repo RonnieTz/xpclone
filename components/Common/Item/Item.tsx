@@ -2,7 +2,7 @@
 
 import React, { useState } from 'react';
 import { UnifiedItemProps } from './types';
-import { useItemInteraction } from './hooks/useItemInteraction';
+import { useUnifiedDragDrop } from './hooks/useUnifiedDragDrop';
 import { useItemStyles } from './styles/useItemStyles';
 import { useItemIcon } from './utils/useItemIcon';
 import { IconView, ListView, DetailsView } from './renderers';
@@ -18,15 +18,23 @@ const UnifiedItem: React.FC<UnifiedItemProps> = ({
   onMove,
   className = '',
   style = {},
+  // New props for unified drag and drop
+  currentPath,
+  windowId,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
 
-  // Custom hooks
-  const { itemRef, handleMouseDown } = useItemInteraction(
+  // Use the new unified drag and drop system
+  const { itemRef, handleMouseDown } = useUnifiedDragDrop({
     item,
+    context,
+    viewMode,
+    currentPath,
+    windowId,
     onSelect,
-    onMove
-  );
+    onMove,
+  });
+
   const { getItemClasses, getItemStyle, getIconSize } = useItemStyles(
     item,
     context,
@@ -85,6 +93,9 @@ const UnifiedItem: React.FC<UnifiedItemProps> = ({
       data-unified-item
       data-context={context}
       data-item-type={item.type}
+      data-file-item={item.id}
+      data-file-type={item.type}
+      data-file-id={item.id}
     >
       {renderContent()}
     </div>

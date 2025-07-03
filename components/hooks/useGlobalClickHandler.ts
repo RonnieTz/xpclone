@@ -25,7 +25,14 @@ export const useGlobalClickHandler = () => {
     }
 
     // Clear desktop icon selection when clicking outside of desktop icons
-    const clickedOnDesktopIcon = target.closest('[data-desktop-icon]');
+    // Look for unified items in desktop context or the old data-desktop-icon attribute
+    const clickedOnDesktopIcon =
+      target.closest('[data-desktop-icon]') ||
+      target.closest('[data-unified-item][data-context="desktop"]') ||
+      target
+        .closest('[data-unified-item]')
+        ?.closest('[data-context="desktop"]');
+
     if (!clickedOnDesktopIcon && selectedIconIds.length > 0) {
       dispatch(clearSelection());
     }

@@ -7,7 +7,14 @@ import {
   clearSelection,
 } from '@/lib/slices/desktopSlice';
 
-export const useDesktopSelection = (getVisuallyOrderedIcons: () => any[]) => {
+export const useDesktopSelection = (
+  getVisuallyOrderedIcons: () => Array<{
+    id: string;
+    name: string;
+    x: number;
+    y: number;
+  }>
+) => {
   const dispatch = useDispatch();
   const [lastSelectedIndex, setLastSelectedIndex] = useState<number>(-1);
   const [anchorIndex, setAnchorIndex] = useState<number>(-1);
@@ -24,7 +31,7 @@ export const useDesktopSelection = (getVisuallyOrderedIcons: () => any[]) => {
   );
 
   const handleIconSelect = useCallback(
-    (iconId: string, event?: React.MouseEvent) => {
+    (iconId: string, event?: React.MouseEvent<HTMLElement>) => {
       // Use visual ordering for consistency with keyboard navigation
       const visualIcons = getVisuallyOrderedIcons();
       const iconIndex = visualIcons.findIndex((icon) => icon.id === iconId);

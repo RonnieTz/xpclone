@@ -39,9 +39,9 @@ export const useExplorerSelectors = (
     const normalizedPath = normalizeFolderPath(currentPath);
 
     // Strategy: Try to find positions in this order:
-    // 1. Current window-specific positions
-    // 2. Any other window's positions for this folder (shared positioning)
-    // 3. Legacy global positions
+    // 1. Current window-specific positions (highest priority)
+    // 2. Legacy global positions (medium priority)
+    // 3. OTHER window positions ONLY if current window has NO positions at all
     // 4. Empty object if none found
 
     if (windowId) {
@@ -57,7 +57,15 @@ export const useExplorerSelectors = (
         return currentWindowPositions;
       }
 
-      // If no positions for current window, look for positions from other windows viewing same folder
+      // Check legacy global positions second (before inheriting from other windows)
+      const globalPositions =
+        state.folderPositions.folderPositions[normalizedPath];
+      if (globalPositions && Object.keys(globalPositions).length > 0) {
+        return globalPositions;
+      }
+
+      // ONLY inherit from other windows if current window has NO data at all
+      // This prevents conflicts when items have been moved and positions cleared
       const allWindowKeys = Object.keys(
         state.folderPositions.windowFolderPositions
       );
@@ -70,17 +78,18 @@ export const useExplorerSelectors = (
             otherWindowPositions &&
             Object.keys(otherWindowPositions).length > 0
           ) {
-            // Copy these positions to current window for future use
-            return otherWindowPositions;
+            // Only inherit if we have absolutely no position data for this window/folder combo
+            // Check both window-specific and global positions are empty
+            const hasCurrentWindowData =
+              (currentWindowPositions &&
+                Object.keys(currentWindowPositions).length > 0) ||
+              (globalPositions && Object.keys(globalPositions).length > 0);
+
+            if (!hasCurrentWindowData) {
+              return otherWindowPositions;
+            }
           }
         }
-      }
-
-      // Fallback to legacy global positions
-      const globalPositions =
-        state.folderPositions.folderPositions[normalizedPath];
-      if (globalPositions && Object.keys(globalPositions).length > 0) {
-        return globalPositions;
       }
     } else {
       // Fallback to legacy global positions when no windowId

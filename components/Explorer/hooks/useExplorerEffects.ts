@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/lib/store';
+import { WindowState } from '@/lib/slices/types/windowTypes';
 
 interface UseExplorerEffectsProps {
   windowId?: string;
@@ -19,7 +20,9 @@ export const useExplorerEffects = ({
 }: UseExplorerEffectsProps) => {
   // Get the current window to watch for focus changes
   const currentWindow = useSelector((state: RootState) =>
-    windowId ? state.windows.windows.find((w) => w.id === windowId) : null
+    windowId
+      ? state.windows.windows.find((w: WindowState) => w.id === windowId)
+      : null
   );
 
   // Watch for refresh counter changes to reload files
@@ -38,10 +41,17 @@ export const useExplorerEffects = ({
     ) {
       clearSelection();
     }
-  }, [currentWindow?.isActive, selectedFileIds.length, clearSelection]);
+  }, [currentWindow, selectedFileIds.length, clearSelection]);
 
   // Clear selection when changing paths
   useEffect(() => {
     clearSelection();
   }, [currentPath, clearSelection]);
+
+  // Handle any effects when this window becomes active
+  useEffect(() => {
+    if (currentWindow && currentWindow.isActive) {
+      // Handle any effects when this window becomes active
+    }
+  }, [currentWindow, currentWindow?.isActive]);
 };

@@ -1,6 +1,6 @@
 import { DesktopIcon } from '@/lib/slices/desktopSlice';
 import { FileItem } from '@/components/Explorer/FolderContent/types';
-import { UnifiedItemData } from './Item';
+import { UnifiedItemData } from './types';
 
 // Convert DesktopIcon to UnifiedItemData
 export const convertDesktopIconToUnified = (

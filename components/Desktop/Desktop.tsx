@@ -2,7 +2,6 @@
 
 import React from 'react';
 
-import DesktopIcon from './components/DesktopIcon';
 import DesktopBackground from './components/DesktopBackground';
 import { useDesktop } from './hooks/useDesktop';
 import UnifiedItem from '@/components/Common/Item';
@@ -26,11 +25,12 @@ const Desktop: React.FC = () => {
           item={convertDesktopIconToUnified(icon)}
           context="desktop"
           isSelected={selectedIconIds.includes(icon.id)}
-          onSelect={(event?: React.MouseEvent) =>
+          onSelect={(event?: React.MouseEvent<HTMLElement>) =>
             handleIconSelect(icon.id, event)
           }
           onDoubleClick={() => onIconDoubleClick(icon.id, icon.name)}
           onMove={(x: number, y: number) => handleIconMove(icon.id, x, y)}
+          currentPath="C:\\Documents and Settings\\Administrator\\Desktop"
         />
       ))}
     </DesktopBackground>

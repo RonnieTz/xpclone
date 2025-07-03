@@ -1,5 +1,7 @@
-import { createSlice, PayloadAction } from '@reduxjs/toolkit';
+import { createSlice, PayloadAction, createAsyncThunk } from '@reduxjs/toolkit';
 import { getDesktopItems, FileSystemItem } from '@/lib/filesystem';
+import { RootState } from '@/lib/store';
+import { removePendingDesktopPosition } from './pendingPositionsSlice';
 
 export interface DesktopIcon {
   id: string;
@@ -7,7 +9,7 @@ export interface DesktopIcon {
   icon: string;
   x: number;
   y: number;
-  type: 'file' | 'folder' | 'application' | 'shortcut';
+  type: 'file' | 'folder' | 'application' | 'shortcut' | 'program' | 'image' | 'sound' | 'drive';
   fileSystemItem?: FileSystemItem; // Reference to the actual filesystem item
 }
 
@@ -29,20 +31,12 @@ function createDesktopIconsFromFileSystem(): DesktopIcon[] {
     const x = col * 100;
     const y = row * 80;
 
-    let iconType: 'file' | 'folder' | 'application' | 'shortcut' = 'file';
+    // Map filesystem types to desktop icon types
+    let iconType: 'file' | 'folder' | 'application' | 'shortcut' | 'program' | 'image' | 'sound' | 'drive' = item.type;
 
-    switch (item.type) {
-      case 'folder':
-        iconType = 'folder';
-        break;
-      case 'program':
-        iconType = 'application';
-        break;
-      case 'shortcut':
-        iconType = 'shortcut';
-        break;
-      default:
-        iconType = 'file';
+    // Handle special mapping for 'program' to 'application' if needed for backwards compatibility
+    if (item.type === 'program') {
+      iconType = 'application';
     }
 
     icons.push({
@@ -83,6 +77,23 @@ const initialState: DesktopState = {
   selectedIconIds: [], // Changed from selectedIconId: null
   wallpaper: 'bliss',
 };
+
+// Async thunk to refresh desktop with pending positions from Redux
+export const refreshDesktopWithPendingPositions = createAsyncThunk(
+  'desktop/refreshWithPendingPositions',
+  async (_, { getState, dispatch }) => {
+    const state = getState() as RootState;
+    const pendingDesktopPositions = state.pendingPositions.desktopPositions;
+
+    // Dispatch the refresh action with pending positions
+    dispatch(refreshDesktopFromFileSystem({ pendingDesktopPositions }));
+
+    // Clear the processed pending positions
+    Object.keys(pendingDesktopPositions).forEach((key) => {
+      dispatch(removePendingDesktopPosition(key));
+    });
+  }
+);
 
 const desktopSlice = createSlice({
   name: 'desktop',
@@ -153,31 +164,26 @@ const desktopSlice = createSlice({
     setWallpaper: (state, action: PayloadAction<string>) => {
       state.wallpaper = action.payload;
     },
-    refreshDesktopFromFileSystem: (state) => {
+    refreshDesktopFromFileSystem: (
+      state,
+      action: PayloadAction<{
+        pendingDesktopPositions?: Record<
+          string,
+          { name: string; id: string; x: number; y: number }
+        >;
+      }>
+    ) => {
       // Keep existing positions for icons that still exist
       const existingPositions = new Map(
         state.icons.map((icon) => [icon.id, { x: icon.x, y: icon.y }])
       );
 
-      // Check for all pending drop positions (with unique keys)
-      const allPendingDrops: Array<{ key: string; data: any }> = [];
-      if (typeof window !== 'undefined') {
-        // Find all keys that start with 'pendingDropPosition_'
-        for (let i = 0; i < sessionStorage.length; i++) {
-          const key = sessionStorage.key(i);
-          if (key && key.startsWith('pendingDropPosition_')) {
-            const dataStr = sessionStorage.getItem(key);
-            if (dataStr) {
-              try {
-                const data = JSON.parse(dataStr);
-                allPendingDrops.push({ key, data });
-              } catch (e) {
-                console.warn('Failed to parse pending drop position:', key, e);
-              }
-            }
-          }
-        }
-      }
+      // Get pending drop positions from the action payload (passed from thunk)
+      const pendingDesktopPositions =
+        action.payload?.pendingDesktopPositions || {};
+      const allPendingDrops = Object.entries(pendingDesktopPositions).map(
+        ([, data]) => ({ data })
+      );
 
       const newIcons = createDesktopIconsFromFileSystem();
 
@@ -189,7 +195,7 @@ const desktopSlice = createSlice({
           icon.y = existingPos.y;
         } else {
           // Check all pending drops for this icon
-          for (const { key, data: pendingDrop } of allPendingDrops) {
+          for (const { data: pendingDrop } of allPendingDrops) {
             const nameMatch =
               icon.name === pendingDrop.name ||
               icon.name.toLowerCase() === pendingDrop.name.toLowerCase() ||
@@ -202,14 +208,8 @@ const desktopSlice = createSlice({
 
             if (nameMatch || idMatch) {
               // Position new icon at drop coordinates
-
               icon.x = pendingDrop.x;
               icon.y = pendingDrop.y;
-
-              // Clear this specific pending drop position
-              if (typeof window !== 'undefined') {
-                sessionStorage.removeItem(key);
-              }
               break; // Found a match, stop checking other pending drops for this icon
             }
           }
