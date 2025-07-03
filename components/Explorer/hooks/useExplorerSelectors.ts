@@ -1,4 +1,5 @@
 import { useSelector } from 'react-redux';
+import { createSelector } from '@reduxjs/toolkit';
 import { RootState } from '@/lib/store';
 
 interface UseExplorerSelectorsReturn {
@@ -27,15 +28,16 @@ const createWindowFolderKey = (
   return `${windowId}:${normalizedPath}`;
 };
 
-export const useExplorerSelectors = (
-  currentPath: string,
-  windowId?: string // Add windowId parameter
-): UseExplorerSelectorsReturn => {
-  const folderOptions = useSelector(
-    (state: RootState) => state.folderOptions.options
-  );
+// Create memoized selectors
+const selectFolderOptions = (state: RootState) => state.folderOptions.options;
 
-  const persistentPositions = useSelector((state: RootState) => {
+const selectFolderPositions = (state: RootState) => state.folderPositions;
+
+const createPersistentPositionsSelector = (
+  currentPath: string,
+  windowId?: string
+) =>
+  createSelector([selectFolderPositions], (folderPositions) => {
     const normalizedPath = normalizeFolderPath(currentPath);
 
     // Strategy: Try to find positions in this order:
@@ -48,7 +50,7 @@ export const useExplorerSelectors = (
       // Check current window-specific positions first
       const windowFolderKey = createWindowFolderKey(windowId, currentPath);
       const currentWindowPositions =
-        state.folderPositions.windowFolderPositions[windowFolderKey];
+        folderPositions.windowFolderPositions[windowFolderKey];
 
       if (
         currentWindowPositions &&
@@ -58,22 +60,19 @@ export const useExplorerSelectors = (
       }
 
       // Check legacy global positions second (before inheriting from other windows)
-      const globalPositions =
-        state.folderPositions.folderPositions[normalizedPath];
+      const globalPositions = folderPositions.folderPositions[normalizedPath];
       if (globalPositions && Object.keys(globalPositions).length > 0) {
         return globalPositions;
       }
 
       // ONLY inherit from other windows if current window has NO data at all
       // This prevents conflicts when items have been moved and positions cleared
-      const allWindowKeys = Object.keys(
-        state.folderPositions.windowFolderPositions
-      );
+      const allWindowKeys = Object.keys(folderPositions.windowFolderPositions);
       for (const key of allWindowKeys) {
         // Check if this key is for the same folder but different window
         if (key.endsWith(`:${normalizedPath}`) && key !== windowFolderKey) {
           const otherWindowPositions =
-            state.folderPositions.windowFolderPositions[key];
+            folderPositions.windowFolderPositions[key];
           if (
             otherWindowPositions &&
             Object.keys(otherWindowPositions).length > 0
@@ -93,8 +92,7 @@ export const useExplorerSelectors = (
       }
     } else {
       // Fallback to legacy global positions when no windowId
-      const globalPositions =
-        state.folderPositions.folderPositions[normalizedPath];
+      const globalPositions = folderPositions.folderPositions[normalizedPath];
       if (globalPositions && Object.keys(globalPositions).length > 0) {
         return globalPositions;
       }
@@ -102,6 +100,19 @@ export const useExplorerSelectors = (
 
     return {};
   });
+
+export const useExplorerSelectors = (
+  currentPath: string,
+  windowId?: string // Add windowId parameter
+): UseExplorerSelectorsReturn => {
+  const folderOptions = useSelector(selectFolderOptions);
+
+  // Create the memoized selector based on current parameters
+  const persistentPositionsSelector = createPersistentPositionsSelector(
+    currentPath,
+    windowId
+  );
+  const persistentPositions = useSelector(persistentPositionsSelector);
 
   return {
     folderOptions,

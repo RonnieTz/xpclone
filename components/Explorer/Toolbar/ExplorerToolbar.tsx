@@ -66,6 +66,7 @@ const ExplorerToolbar: React.FC<ExplorerToolbarProps> = ({
           alt="Windows XP Logo"
           width={30}
           height={30}
+          style={{ height: 'auto' }}
           // className="object-contain"
         />
       </div>
