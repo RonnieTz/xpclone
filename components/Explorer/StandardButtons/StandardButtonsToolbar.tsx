@@ -53,23 +53,34 @@ const StandardButtonsToolbar: React.FC<StandardButtonsToolbarProps> = ({
       return; // Can't go up from these special locations
     }
 
-    // Find parent path
+    // Find parent path using filesystem structure
     const currentItem = findItemByPath(currentPath);
+
     if (currentItem && currentItem.parentId) {
       // Find the parent item
       const parentItem = findItemById(currentItem.parentId);
       if (parentItem) {
         onNavigate(parentItem.path);
+        return;
       }
+    }
+
+    // Fallback: Parse path manually
+    const pathParts = currentPath.split('\\').filter(Boolean);
+
+    if (pathParts.length > 1) {
+      // Remove the last part to go up one level
+      const parentPath = pathParts.slice(0, -1).join('\\');
+      const fullParentPath = parentPath.startsWith('C:')
+        ? parentPath
+        : `C:\\${parentPath}`;
+      onNavigate(fullParentPath);
+    } else if (pathParts.length === 1 && pathParts[0] !== '') {
+      // If we're at C:\ level, go to My Computer
+      onNavigate('My Computer');
     } else {
-      // Default to going up one directory level
-      const pathParts = currentPath.split('\\').filter(Boolean);
-      if (pathParts.length > 1) {
-        const parentPath = pathParts.slice(0, -1).join('\\');
-        onNavigate(parentPath || 'C:\\');
-      } else {
-        onNavigate('My Computer');
-      }
+      // Already at root or invalid path
+      onNavigate('My Computer');
     }
   };
 

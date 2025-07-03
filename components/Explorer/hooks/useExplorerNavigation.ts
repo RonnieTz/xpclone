@@ -33,15 +33,17 @@ export const useExplorerNavigation = ({
   // Load files for the current path
   const loadFilesForPath = useCallback((targetPath: string) => {
     const currentItem = findItemByPath(targetPath);
+
     if (currentItem && 'children' in currentItem) {
       const fileItems = currentItem.children.map(convertToFileItem);
-      setFiles(fileItems);
+      // Force a new array reference to ensure React detects the change
+      setFiles([...fileItems]);
     } else {
       setFiles([]);
     }
   }, []);
 
-  // Initialize navigation when component mounts
+  // Initialize navigation when component mounts - only once per window
   useEffect(() => {
     if (windowId) {
       const title = getWindowTitle(currentPath);
@@ -53,9 +55,9 @@ export const useExplorerNavigation = ({
         })
       );
     }
-  }, [windowId, currentPath, dispatch]);
+  }, [windowId, dispatch]); // Remove currentPath dependency to prevent re-initialization
 
-  // Load files when path changes
+  // Load files when path changes - add dependency array to ensure effect runs
   useEffect(() => {
     loadFilesForPath(currentPath);
   }, [currentPath, loadFilesForPath]);
@@ -69,6 +71,18 @@ export const useExplorerNavigation = ({
 
   const handlePathChange = useCallback(
     (newPath: string, isNavigationAction?: boolean) => {
+      // Validate that the target path exists and is a folder
+      const targetItem = findItemByPath(newPath);
+      if (!targetItem) {
+        console.error('Target path does not exist:', newPath);
+        return;
+      }
+
+      if (!('children' in targetItem)) {
+        console.error('Target path is not a folder:', newPath);
+        return;
+      }
+
       // Update window title and content
       if (windowId) {
         const title = getWindowTitle(newPath);
@@ -94,9 +108,15 @@ export const useExplorerNavigation = ({
         }
       }
 
+      // Force state update by ensuring React sees this as a new value
       setCurrentPath(newPath);
+
+      // Also explicitly load files after path change to ensure they update
+      setTimeout(() => {
+        loadFilesForPath(newPath);
+      }, 0);
     },
-    [windowId, dispatch]
+    [windowId, dispatch, loadFilesForPath]
   );
 
   return {
