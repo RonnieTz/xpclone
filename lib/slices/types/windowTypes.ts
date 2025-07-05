@@ -28,6 +28,10 @@ export interface WindowState {
   isMinimizeAnimating?: boolean;
   isRestoreAnimating?: boolean;
   refreshCounter?: number; // Added refresh counter
+  // Modal window properties
+  isModal?: boolean;
+  parentWindowId?: string;
+  modalOverlayId?: string;
 }
 
 export interface WindowsState {

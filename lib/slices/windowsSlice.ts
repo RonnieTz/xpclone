@@ -4,6 +4,8 @@ import { INITIAL_Z_INDEX } from './constants/windowConstants';
 import {
   openWindowReducer,
   openOrFocusWindowReducer,
+  openModalWindowReducer,
+  closeModalWindowReducer,
 } from './reducers/windowOpenReducers';
 import { closeWindowReducer } from './reducers/windowCloseReducers';
 import {
@@ -52,6 +54,8 @@ const windowsSlice = createSlice({
     unfocusAllWindows: unfocusAllWindowsReducer,
     refreshExplorerWindows: refreshExplorerWindowsReducer,
     openOrFocusWindow: openOrFocusWindowReducer,
+    openModalWindow: openModalWindowReducer,
+    closeModalWindow: closeModalWindowReducer,
   },
 });
 
@@ -72,6 +76,8 @@ export const {
   unfocusAllWindows,
   refreshExplorerWindows,
   openOrFocusWindow,
+  openModalWindow,
+  closeModalWindow,
 } = windowsSlice.actions;
 export default windowsSlice.reducer;
 

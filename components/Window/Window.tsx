@@ -11,10 +11,12 @@ import {
 } from '@/lib/slices/windowsSlice';
 import { useWindowDrag } from './useWindowDrag';
 import { useWindowResize } from './useWindowResize';
+import { useModalWindow } from './useModalWindow';
 import WindowTitleBar from './WindowTitleBar';
 import WindowContent from './WindowContent';
 import WindowResizeHandle from './WindowResizeHandle';
 import WindowBorders from './WindowBorders';
+import ModalOverlay from './ModalOverlay';
 
 interface WindowProps {
   window: WindowState;
@@ -27,6 +29,7 @@ const Window: React.FC<WindowProps> = ({ window }) => {
   const { isDragging, handleMouseDown: handleDragMouseDown } =
     useWindowDrag(window);
   const { isResizing, handleResizeMouseDown } = useWindowResize(window);
+  const { isDisabled, isModal, canReceiveFocus } = useModalWindow(window);
 
   // Handle animation state reset
   useEffect(() => {
@@ -149,11 +152,25 @@ const Window: React.FC<WindowProps> = ({ window }) => {
   }, [isResizing]);
 
   const handleWindowClick = () => {
-    dispatch(focusWindow(window.id));
+    // Only allow focus if window can receive focus (not disabled by modal)
+    if (canReceiveFocus) {
+      dispatch(focusWindow(window.id));
+    }
   };
 
   const handleTitleBarMouseDown = (e: React.MouseEvent) => {
-    handleDragMouseDown(e, windowRef);
+    // Only allow dragging if window is not disabled
+    if (canReceiveFocus && !isDisabled) {
+      handleDragMouseDown(e, windowRef);
+    }
+  };
+
+  const handleModalOverlayClick = () => {
+    // Optional: Flash the modal window or play a sound to indicate it needs attention
+    // For now, just ensure the modal stays focused
+    if (window.isModal) {
+      dispatch(focusWindow(window.id));
+    }
   };
 
   // Don't render window if minimized and not animating
@@ -224,30 +241,50 @@ const Window: React.FC<WindowProps> = ({ window }) => {
       window.isRestoreAnimating);
 
   return (
-    <div
-      ref={windowRef}
-      data-window
-      data-window-id={window.id}
-      className={`absolute bg-gray-100 shadow-lg overflow-hidden ${
-        window.isMaximized ? '' : 'rounded-t-lg'
-      } ${isDragging ? 'cursor-grabbing' : ''} ${
-        shouldAnimate ? 'transition-all duration-300 ease-in-out' : ''
-      }`}
-      style={{
-        ...windowStyle,
-        zIndex: window.zIndex,
-      }}
-      onClick={handleWindowClick}
-    >
-      <WindowTitleBar
-        window={window}
-        onMouseDown={handleTitleBarMouseDown}
-        isDragging={isDragging}
-      />
-      <WindowContent window={window} />
-      <WindowResizeHandle window={window} onMouseDown={handleResizeMouseDown} />
-      <WindowBorders window={window} />
-    </div>
+    <>
+      {/* Render modal overlay if this is a modal window */}
+      {isModal && window.modalOverlayId && (
+        <ModalOverlay
+          id={window.modalOverlayId}
+          parentWindowId={window.parentWindowId!}
+          zIndex={window.zIndex}
+          onOverlayClick={handleModalOverlayClick}
+        />
+      )}
+
+      <div
+        ref={windowRef}
+        data-window
+        data-window-id={window.id}
+        data-modal={isModal}
+        data-disabled={isDisabled}
+        className={`absolute bg-gray-100 shadow-lg overflow-hidden ${
+          window.isMaximized ? '' : 'rounded-t-lg'
+        } ${isDragging ? 'cursor-grabbing' : ''} ${
+          shouldAnimate ? 'transition-all duration-300 ease-in-out' : ''
+        } ${isDisabled ? 'pointer-events-none opacity-75' : ''}`}
+        style={{
+          ...windowStyle,
+          zIndex: window.zIndex,
+        }}
+        onClick={handleWindowClick}
+      >
+        <WindowTitleBar
+          window={window}
+          onMouseDown={handleTitleBarMouseDown}
+          isDragging={isDragging}
+          isDisabled={isDisabled}
+        />
+        <WindowContent window={window} />
+        {!isDisabled && (
+          <WindowResizeHandle
+            window={window}
+            onMouseDown={handleResizeMouseDown}
+          />
+        )}
+        <WindowBorders window={window} />
+      </div>
+    </>
   );
 };
 

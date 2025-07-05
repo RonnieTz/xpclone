@@ -1,12 +1,59 @@
 import React from 'react';
 import { WindowState } from '@/lib/slices/windowsSlice';
+import { useDispatch } from 'react-redux';
 import Explorer from '../Explorer/Explorer';
+import ConfirmationDialog from '../Common/ConfirmationDialog';
+import { closeModalWindow } from '@/lib/slices/windowsSlice';
 
 interface WindowContentProps {
   window: WindowState;
 }
 
 const WindowContent: React.FC<WindowContentProps> = ({ window }) => {
+  const dispatch = useDispatch();
+
+  // Check if this is a modal with special content
+  const isModalContent = window.content.startsWith('Modal: ');
+
+  if (isModalContent) {
+    try {
+      const modalDataString = window.content.replace('Modal: ', '');
+      const modalData = JSON.parse(modalDataString);
+
+      if (modalData.type === 'confirmation') {
+        const handleConfirm = () => {
+          modalData.onConfirm?.();
+          dispatch(closeModalWindow(window.id));
+        };
+
+        const handleCancel = () => {
+          modalData.onCancel?.();
+          dispatch(closeModalWindow(window.id));
+        };
+
+        return (
+          <div
+            className={`flex-1 overflow-hidden ${
+              window.isMaximized ? '' : 'mx-0.5 mb-0.5'
+            }`}
+            style={{ height: 'calc(100% - 30px)' }}
+          >
+            <ConfirmationDialog
+              title={modalData.title}
+              message={modalData.message}
+              onConfirm={handleConfirm}
+              onCancel={handleCancel}
+              confirmText={modalData.confirmText}
+              cancelText={modalData.cancelText}
+            />
+          </div>
+        );
+      }
+    } catch (error) {
+      console.error('Failed to parse modal data:', error);
+    }
+  }
+
   // Check if this window should show the Explorer
   const shouldShowExplorer = () => {
     // Check for folder windows

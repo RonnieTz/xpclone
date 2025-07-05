@@ -5,6 +5,7 @@ import {
   minimizeWindow,
   maximizeWindow,
   setTaskbarAnimationTarget,
+  closeModalWindow,
 } from '@/lib/slices/windowsSlice';
 import { removeTaskbarItem } from '@/lib/slices/taskbarSlice';
 import { WindowState } from '@/lib/slices/windowsSlice';
@@ -16,24 +17,36 @@ interface WindowTitleBarProps {
   window: WindowState;
   onMouseDown: (e: React.MouseEvent) => void;
   isDragging: boolean;
+  isDisabled?: boolean;
 }
 
 const WindowTitleBar: React.FC<WindowTitleBarProps> = ({
   window,
   onMouseDown,
   isDragging,
+  isDisabled = false,
 }) => {
   const dispatch = useDispatch();
   const { getTaskbarItemPosition } = useTaskbarPosition();
 
   const handleClose = (e: React.MouseEvent) => {
     e.stopPropagation();
-    dispatch(closeWindow(window.id));
-    dispatch(removeTaskbarItem(window.id));
+
+    if (window.isModal) {
+      dispatch(closeModalWindow(window.id));
+    } else {
+      dispatch(closeWindow(window.id));
+      dispatch(removeTaskbarItem(window.id));
+    }
   };
 
   const handleMinimize = (e: React.MouseEvent) => {
     e.stopPropagation();
+
+    // Modal windows typically can't be minimized
+    if (window.isModal) {
+      return;
+    }
 
     // Get taskbar position for animation
     const taskbarPosition = getTaskbarItemPosition(window.id);
@@ -51,12 +64,24 @@ const WindowTitleBar: React.FC<WindowTitleBarProps> = ({
 
   const handleMaximize = (e: React.MouseEvent) => {
     e.stopPropagation();
+
+    // Modal windows typically can't be maximized
+    if (window.isModal) {
+      return;
+    }
+
     dispatch(maximizeWindow(window.id));
   };
 
   const handleDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     e.preventDefault();
+
+    // Modal windows typically can't be maximized
+    if (window.isModal) {
+      return;
+    }
+
     dispatch(maximizeWindow(window.id));
   };
 
@@ -64,7 +89,9 @@ const WindowTitleBar: React.FC<WindowTitleBarProps> = ({
     <div
       className={`flex items-center justify-between h-8 px-2 bg-center ${
         isDragging ? 'cursor-grabbing' : ''
-      } ${window.isActive ? '' : 'opacity-75'}`}
+      } ${window.isActive ? '' : 'opacity-75'} ${
+        isDisabled ? 'pointer-events-none' : ''
+      }`}
       style={{
         backgroundImage: 'url(/header.png)',
         backgroundSize: 'auto 100%',
@@ -90,36 +117,47 @@ const WindowTitleBar: React.FC<WindowTitleBarProps> = ({
       </div>
 
       <div className="flex items-center space-x-0.5">
-        <button
-          className="w-6 h-6 flex items-center justify-center hover:brightness-125 transition-all rounded-none"
-          onClick={handleMinimize}
-          title="Minimize"
-        >
-          <Image
-            src="/Minimize.png"
-            alt="Minimize"
-            width={24}
-            height={24}
-            className="object-cover w-full h-full"
-          />
-        </button>
-        <button
-          className="w-6 h-6 flex items-center justify-center hover:brightness-125 transition-all rounded-none"
-          onClick={handleMaximize}
-          title={window.isMaximized ? 'Restore' : 'Maximize'}
-        >
-          <Image
-            src={window.isMaximized ? '/Restore.png' : '/Maximize.png'}
-            alt={window.isMaximized ? 'Restore' : 'Maximize'}
-            width={24}
-            height={24}
-            className="object-cover w-full h-full"
-          />
-        </button>
+        {/* Only show minimize button for non-modal windows */}
+        {!window.isModal && (
+          <button
+            className="w-6 h-6 flex items-center justify-center hover:brightness-125 transition-all rounded-none"
+            onClick={handleMinimize}
+            title="Minimize"
+            disabled={isDisabled}
+          >
+            <Image
+              src="/Minimize.png"
+              alt="Minimize"
+              width={24}
+              height={24}
+              className="object-cover w-full h-full"
+            />
+          </button>
+        )}
+
+        {/* Only show maximize button for non-modal windows */}
+        {!window.isModal && (
+          <button
+            className="w-6 h-6 flex items-center justify-center hover:brightness-125 transition-all rounded-none"
+            onClick={handleMaximize}
+            title={window.isMaximized ? 'Restore' : 'Maximize'}
+            disabled={isDisabled}
+          >
+            <Image
+              src={window.isMaximized ? '/Restore.png' : '/Maximize.png'}
+              alt={window.isMaximized ? 'Restore' : 'Maximize'}
+              width={24}
+              height={24}
+              className="object-cover w-full h-full"
+            />
+          </button>
+        )}
+
         <button
           className="w-6 h-6 flex items-center justify-center hover:brightness-125 transition-all rounded-none"
           onClick={handleClose}
           title="Close"
+          disabled={isDisabled}
         >
           <Image
             src="/Exit.png"
