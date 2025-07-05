@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { WindowState } from '@/lib/slices/windowsSlice';
 import {
@@ -16,7 +16,6 @@ import WindowTitleBar from './WindowTitleBar';
 import WindowContent from './WindowContent';
 import WindowResizeHandle from './WindowResizeHandle';
 import WindowBorders from './WindowBorders';
-import ModalOverlay from './ModalOverlay';
 
 interface WindowProps {
   window: WindowState;
@@ -25,11 +24,13 @@ interface WindowProps {
 const Window: React.FC<WindowProps> = ({ window }) => {
   const dispatch = useDispatch();
   const windowRef = useRef<HTMLDivElement>(null);
+  const [isFlicking, setIsFlicking] = useState(false);
 
   const { isDragging, handleMouseDown: handleDragMouseDown } =
     useWindowDrag(window);
   const { isResizing, handleResizeMouseDown } = useWindowResize(window);
-  const { isDisabled, isModal, canReceiveFocus } = useModalWindow(window);
+  const { isDisabled, isModal, canReceiveFocus, topmostModal } =
+    useModalWindow(window);
 
   // Handle animation state reset
   useEffect(() => {
@@ -152,24 +153,42 @@ const Window: React.FC<WindowProps> = ({ window }) => {
   }, [isResizing]);
 
   const handleWindowClick = () => {
-    // Only allow focus if window can receive focus (not disabled by modal)
     if (canReceiveFocus) {
       dispatch(focusWindow(window.id));
+    } else if (isDisabled && topmostModal) {
+      // If this window is disabled, flick the topmost modal and focus it
+      flickModal(topmostModal.id);
+      dispatch(focusWindow(topmostModal.id));
     }
   };
 
   const handleTitleBarMouseDown = (e: React.MouseEvent) => {
-    // Only allow dragging if window is not disabled
     if (canReceiveFocus && !isDisabled) {
       handleDragMouseDown(e, windowRef);
+    } else if (isDisabled && topmostModal) {
+      // Prevent dragging but flick the modal
+      e.preventDefault();
+      flickModal(topmostModal.id);
+      dispatch(focusWindow(topmostModal.id));
     }
   };
 
-  const handleModalOverlayClick = () => {
-    // Optional: Flash the modal window or play a sound to indicate it needs attention
-    // For now, just ensure the modal stays focused
-    if (window.isModal) {
-      dispatch(focusWindow(window.id));
+  const flickModal = (modalId: string) => {
+    const modalElement = document.querySelector(
+      `[data-window-id="${modalId}"]`
+    ) as HTMLElement;
+    if (modalElement) {
+      // Add flick animation class
+      modalElement.style.transform = 'scale(1.02)';
+      modalElement.style.transition = 'transform 0.1s ease-out';
+
+      setTimeout(() => {
+        modalElement.style.transform = 'scale(1)';
+        setTimeout(() => {
+          modalElement.style.removeProperty('transform');
+          modalElement.style.removeProperty('transition');
+        }, 100);
+      }, 100);
     }
   };
 
@@ -241,50 +260,47 @@ const Window: React.FC<WindowProps> = ({ window }) => {
       window.isRestoreAnimating);
 
   return (
-    <>
-      {/* Render modal overlay if this is a modal window */}
-      {isModal && window.modalOverlayId && (
-        <ModalOverlay
-          id={window.modalOverlayId}
-          parentWindowId={window.parentWindowId!}
-          zIndex={window.zIndex}
-          onOverlayClick={handleModalOverlayClick}
+    <div
+      ref={windowRef}
+      data-window
+      data-window-id={window.id}
+      data-modal={isModal}
+      data-disabled={isDisabled}
+      className={`absolute bg-gray-100 shadow-lg overflow-hidden ${
+        window.isMaximized ? '' : 'rounded-t-lg'
+      } ${isDragging ? 'cursor-grabbing' : ''} ${
+        shouldAnimate ? 'transition-all duration-300 ease-in-out' : ''
+      } ${isDisabled ? 'disabled-window-content' : ''}`} // Removed cursor-not-allowed
+      style={{
+        ...windowStyle,
+        zIndex: window.zIndex,
+      }}
+      onClick={handleWindowClick}
+      onMouseDown={(e) => {
+        // Handle clicks anywhere on disabled windows
+        if (isDisabled && topmostModal) {
+          e.preventDefault();
+          e.stopPropagation();
+          flickModal(topmostModal.id);
+          dispatch(focusWindow(topmostModal.id));
+        }
+      }}
+    >
+      <WindowTitleBar
+        window={window}
+        onMouseDown={handleTitleBarMouseDown}
+        isDragging={isDragging}
+        isDisabled={isDisabled}
+      />
+      <WindowContent window={window} />
+      {!isDisabled && (
+        <WindowResizeHandle
+          window={window}
+          onMouseDown={handleResizeMouseDown}
         />
       )}
-
-      <div
-        ref={windowRef}
-        data-window
-        data-window-id={window.id}
-        data-modal={isModal}
-        data-disabled={isDisabled}
-        className={`absolute bg-gray-100 shadow-lg overflow-hidden ${
-          window.isMaximized ? '' : 'rounded-t-lg'
-        } ${isDragging ? 'cursor-grabbing' : ''} ${
-          shouldAnimate ? 'transition-all duration-300 ease-in-out' : ''
-        } ${isDisabled ? 'pointer-events-none opacity-75' : ''}`}
-        style={{
-          ...windowStyle,
-          zIndex: window.zIndex,
-        }}
-        onClick={handleWindowClick}
-      >
-        <WindowTitleBar
-          window={window}
-          onMouseDown={handleTitleBarMouseDown}
-          isDragging={isDragging}
-          isDisabled={isDisabled}
-        />
-        <WindowContent window={window} />
-        {!isDisabled && (
-          <WindowResizeHandle
-            window={window}
-            onMouseDown={handleResizeMouseDown}
-          />
-        )}
-        <WindowBorders window={window} />
-      </div>
-    </>
+      <WindowBorders window={window} />
+    </div>
   );
 };
 

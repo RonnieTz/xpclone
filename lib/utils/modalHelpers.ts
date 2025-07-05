@@ -44,6 +44,30 @@ export const openModal = (
   );
 };
 
+// Modal callback registry to handle functions that can't be serialized
+const modalCallbacks = new Map<
+  string,
+  {
+    onConfirm?: () => void;
+    onCancel?: () => void;
+  }
+>();
+
+export const registerModalCallbacks = (
+  modalId: string,
+  callbacks: { onConfirm?: () => void; onCancel?: () => void }
+) => {
+  modalCallbacks.set(modalId, callbacks);
+};
+
+export const getModalCallbacks = (modalId: string) => {
+  return modalCallbacks.get(modalId);
+};
+
+export const clearModalCallbacks = (modalId: string) => {
+  modalCallbacks.delete(modalId);
+};
+
 /**
  * Opens a confirmation dialog modal
  */
@@ -59,9 +83,21 @@ export const openConfirmationDialog = (
     cancelText?: string;
   }
 ) => {
+  const modalId = Date.now().toString();
+
+  // Store callbacks in registry
+  registerModalCallbacks(modalId, {
+    onConfirm: options.onConfirm,
+    onCancel: options.onCancel,
+  });
+
   const dialogData = JSON.stringify({
     type: 'confirmation',
-    ...options,
+    modalId,
+    title: options.title,
+    message: options.message,
+    confirmText: options.confirmText,
+    cancelText: options.cancelText,
   });
 
   openModal(dispatch, parentWindowId, {

@@ -44,3 +44,44 @@ body {
   transition: none !important;
   cursor: grabbing !important;
 }
+
+/* Disabled Window Content Styles - Only disable interactive elements, not the window itself */
+.disabled-window-content > * {
+  pointer-events: none !important;
+}
+
+/* Allow the window container itself to receive events for flick functionality */
+.disabled-window-content {
+  pointer-events: auto !important;
+}
+
+/* Override hover effects on interactive elements inside disabled windows */
+[data-disabled='true'] button:hover,
+[data-disabled='true'] .hover\:brightness-125:hover,
+[data-disabled='true'] .hover\:bg-blue-500:hover,
+[data-disabled='true'] .hover\:bg-gray-300:hover,
+[data-disabled='true'] .cursor-pointer:hover,
+[data-disabled='true'] [data-toolbar-item]:hover,
+[data-disabled='true'] .dropdown-item:hover {
+  background-color: inherit !important;
+  brightness: inherit !important;
+  filter: none !important;
+  transform: none !important;
+  box-shadow: inherit !important;
+  border-color: inherit !important;
+  color: inherit !important;
+}
+
+/* Disable transitions for disabled windows */
+[data-disabled='true'] .transition-all {
+  transition: none !important;
+}
+
+/* Style interactive elements to appear disabled */
+[data-disabled='true'] button,
+[data-disabled='true'] input,
+[data-disabled='true'] select,
+[data-disabled='true'] textarea {
+  opacity: 0.7;
+  cursor: inherit !important;
+}

@@ -70,7 +70,6 @@ export const openModalWindowReducer = (
   }
 
   const id = Date.now().toString();
-  const overlayId = `${id}-overlay`;
 
   // Calculate modal position relative to parent
   const modalPosition = calculateModalPosition(
@@ -88,7 +87,6 @@ export const openModalWindowReducer = (
     isActive: true,
     isModal: true,
     parentWindowId,
-    modalOverlayId: overlayId,
     isResizable: windowPayload.isResizable ?? false, // Modals typically not resizable
   };
 
@@ -97,7 +95,7 @@ export const openModalWindowReducer = (
 
   state.windows.push(newModal);
   state.activeWindowId = id;
-  state.nextZIndex += 2; // Reserve space for overlay
+  state.nextZIndex += 1; // Just increment by 1, no overlay needed
 };
 
 export const closeModalWindowReducer = (

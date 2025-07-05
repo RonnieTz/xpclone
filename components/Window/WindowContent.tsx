@@ -4,6 +4,10 @@ import { useDispatch } from 'react-redux';
 import Explorer from '../Explorer/Explorer';
 import ConfirmationDialog from '../Common/ConfirmationDialog';
 import { closeModalWindow } from '@/lib/slices/windowsSlice';
+import {
+  getModalCallbacks,
+  clearModalCallbacks,
+} from '@/lib/utils/modalHelpers';
 
 interface WindowContentProps {
   window: WindowState;
@@ -21,13 +25,17 @@ const WindowContent: React.FC<WindowContentProps> = ({ window }) => {
       const modalData = JSON.parse(modalDataString);
 
       if (modalData.type === 'confirmation') {
+        const callbacks = getModalCallbacks(modalData.modalId);
+
         const handleConfirm = () => {
-          modalData.onConfirm?.();
+          callbacks?.onConfirm?.();
+          clearModalCallbacks(modalData.modalId);
           dispatch(closeModalWindow(window.id));
         };
 
         const handleCancel = () => {
-          modalData.onCancel?.();
+          callbacks?.onCancel?.();
+          clearModalCallbacks(modalData.modalId);
           dispatch(closeModalWindow(window.id));
         };
 

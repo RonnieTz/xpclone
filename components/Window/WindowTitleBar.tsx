@@ -32,6 +32,11 @@ const WindowTitleBar: React.FC<WindowTitleBarProps> = ({
   const handleClose = (e: React.MouseEvent) => {
     e.stopPropagation();
 
+    // Don't allow closing if disabled
+    if (isDisabled) {
+      return;
+    }
+
     if (window.isModal) {
       dispatch(closeModalWindow(window.id));
     } else {
@@ -43,8 +48,8 @@ const WindowTitleBar: React.FC<WindowTitleBarProps> = ({
   const handleMinimize = (e: React.MouseEvent) => {
     e.stopPropagation();
 
-    // Modal windows typically can't be minimized
-    if (window.isModal) {
+    // Don't allow minimizing if disabled or modal
+    if (isDisabled || window.isModal) {
       return;
     }
 
@@ -65,8 +70,8 @@ const WindowTitleBar: React.FC<WindowTitleBarProps> = ({
   const handleMaximize = (e: React.MouseEvent) => {
     e.stopPropagation();
 
-    // Modal windows typically can't be maximized
-    if (window.isModal) {
+    // Don't allow maximizing if disabled or modal
+    if (isDisabled || window.isModal) {
       return;
     }
 
@@ -77,8 +82,8 @@ const WindowTitleBar: React.FC<WindowTitleBarProps> = ({
     e.stopPropagation();
     e.preventDefault();
 
-    // Modal windows typically can't be maximized
-    if (window.isModal) {
+    // Don't allow maximizing if disabled or modal
+    if (isDisabled || window.isModal) {
       return;
     }
 

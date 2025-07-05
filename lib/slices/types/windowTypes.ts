@@ -31,7 +31,6 @@ export interface WindowState {
   // Modal window properties
   isModal?: boolean;
   parentWindowId?: string;
-  modalOverlayId?: string;
 }
 
 export interface WindowsState {
